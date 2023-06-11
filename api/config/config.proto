@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package atom.config.v1;
+
+option go_package = "github.com/nextmicro/next/api/config/v1";
+
+import "google/protobuf/any.proto";
+
+message Atom {
+  string name = 1;
+  string version = 2;
+  Logger  logger = 3;
+  repeated Middleware middlewares = 5;
+}
+
+message Logger {
+  string  path = 1;
+  string  level = 2;
+  bool    console = 3;
+  bool    file = 4;
+  map<string, string> metadata = 5;
+}
+
+message Middleware {
+  string name = 1;
+  google.protobuf.Any options = 2;
+}
+
