@@ -153,7 +153,8 @@ func Init(filename string) (*Config, error) {
 		return nil, fmt.Errorf("failed to load config filename: %s, error: %s", filename, err)
 	}
 
-	if err = AppScan(cc.Value("")); err != nil {
+	DefaultConfig = cc
+	if err = AppScan(); err != nil {
 		return nil, fmt.Errorf("failed to scan next config, error: %v", err)
 	}
 
@@ -177,9 +178,9 @@ func Init(filename string) (*Config, error) {
 }
 
 // AppScan 框架默认配置
-func AppScan(value kConfig.Value) error {
+func AppScan() error {
 	out := &v1.Next{}
-	if err := value.Scan(out); err != nil {
+	if err := DefaultConfig.Scan(out); err != nil {
 		return fmt.Errorf("failed to scan config: %s", err)
 	}
 
