@@ -134,7 +134,8 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 	}, nil
 }
 
-func New(filename string) (*Config, error) {
+// Init 初始化配置
+func Init(filename string) (*Config, error) {
 	cc := &Config{
 		path:     filepath.Dir(filename),
 		filename: filename,
@@ -171,6 +172,7 @@ func New(filename string) (*Config, error) {
 		}
 	}
 
+	DefaultConfig = cc
 	return cc, nil
 }
 
