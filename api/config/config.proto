@@ -1,18 +1,27 @@
 syntax = "proto3";
 
-package atom.config.v1;
+package next.config.v1;
 
 option go_package = "github.com/nextmicro/next/api/config/v1";
 
 import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
 
-message Atom {
+// next micro global config
+message Next {
+  // service name
   string name = 1;
+  // service version
   string version = 2;
+  // logger config
   Logger  logger = 3;
+  // nacos config
+  Nacos   nacos = 4;
+  // middleware config
   repeated Middleware middlewares = 5;
 }
 
+// logger config
 message Logger {
   string  path = 1;
   string  level = 2;
@@ -21,6 +30,31 @@ message Logger {
   map<string, string> metadata = 5;
 }
 
+// nacos config
+message Nacos {
+  // nacos server address
+  repeated string address = 1;
+  // nacos config data id
+  string data_id = 2;
+  // nacos config group
+  string group = 3;
+  // nacos config namespace
+  string namespaces = 4;
+  // nacos config username
+  string username = 5;
+  // nacos config password
+  string password = 6;
+  // nacos config log dir
+  string log_dir = 7;
+  // nacos config cache dir
+  string cache_dir = 8;
+  // nacos timeout(ms). default 5000
+  google.protobuf.Duration timeout = 10;
+  // nacos logger level. default info
+  string log_level = 11;
+}
+
+// middleware config
 message Middleware {
   string name = 1;
   google.protobuf.Any options = 2;

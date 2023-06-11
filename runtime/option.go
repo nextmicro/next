@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"github.com/nextmicro/next/runtime/loader"
+	"github.com/nextmicro/next/runtime/loader/config"
+	"github.com/nextmicro/next/runtime/loader/logger"
 )
 
 type Option func(o *Options)
@@ -13,6 +15,24 @@ type Options struct {
 	version  string
 	metadata map[string]string
 	loader   []loader.Loader
+}
+
+// defaultOptions configure runtime
+func defaultOptions(opts ...Option) Options {
+	options := Options{
+		loader: []loader.Loader{
+			config.New(), // config loader
+			logger.New(), // logger loader
+		},
+		metadata: make(map[string]string),
+	}
+
+	// apply requested options
+	for _, o := range opts {
+		o(&options)
+	}
+
+	return options
 }
 
 // ID with service id.

@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 
-	kConf "github.com/go-kratos/kratos/v2/config"
-	"github.com/go-kratos/kratos/v2/config/env"
-	"github.com/go-kratos/kratos/v2/config/file"
+	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-volo/logger"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/runtime/loader"
@@ -43,16 +41,11 @@ func (loader config) Init(opts ...loader.Option) error {
 		return errors.New("config: file_path not empty")
 	}
 
-	conf.DefaultConfig = kConf.New(
-		kConf.WithSource(
-			env.NewSource("KRATOS_"),
-			file.NewSource(filePath),
-		),
-	)
-
-	if err := conf.DefaultConfig.Load(); err != nil {
-		return errors.New("config: " + err.Error())
+	c, err := conf.New(filePath)
+	if err != nil {
+		return err
 	}
+	conf.DefaultConfig = c
 
 	logger.Infof("Loader [%s] init success", loader.String())
 
@@ -64,15 +57,28 @@ func (loader config) Start(ctx context.Context) error {
 }
 
 func (loader config) Watch() error {
+	err := conf.Watch("config", func(key string, value kconfig.Value) {
+		if err := conf.AppScan(value); err != nil {
+			logger.Errorf("config watcher scan error: %s", err)
+		}
+
+		logger.Infof("config change, successfully loaded, new: %+v", conf.AppConfig())
+	})
+	if err != nil {
+		return errors.New("config: watch error")
+	}
+
+	logger.Infof("Loader [%s] watch success", loader.String())
+
 	return nil
 }
 
 func (loader config) Stop(ctx context.Context) error {
 	loader.watchCancel()
 
-	err := conf.DefaultConfig.Close()
+	err := conf.Close()
 	if err != nil {
-		return err
+		return errors.New("config: close error")
 	}
 
 	logger.Infof("Loader [%s] stop success", loader.String())
