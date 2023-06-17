@@ -165,6 +165,9 @@ func Init(filename string) (*Config, error) {
 	}
 
 	if len(sources) > 0 {
+		if err = cc.Close(); err != nil {
+			return nil, err
+		}
 		source = append(source, sources...)
 		cc.Config = kConfig.New(kConfig.WithSource(source...))
 		err = cc.Load()
