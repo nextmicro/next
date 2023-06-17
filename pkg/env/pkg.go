@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	_startTime    string
-	_goVersion    string
-	_milliVersion string
+	_startTime  string
+	_goVersion  string
+	_appVersion string
 )
 
 // build info
@@ -26,12 +26,12 @@ func init() {
 	_goVersion = runtime.Version()
 
 	// milli version
-	_milliVersion = "unknown version"
+	_appVersion = "unknown version"
 	info, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, value := range info.Deps {
-			if value.Path == "git.mter.io/milli/milli" {
-				_milliVersion = value.Version
+			if value.Path == "github.com/nextmicro/next" {
+				_appVersion = value.Version
 			}
 		}
 	}
@@ -47,9 +47,9 @@ func BuildTime() string {
 	return _buildTime
 }
 
-// MilliVersion get milli version
-func MilliVersion() string {
-	return _milliVersion
+// AppVersion get app version
+func AppVersion() string {
+	return _appVersion
 }
 
 // GoVersion get go version
