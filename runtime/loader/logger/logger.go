@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"errors"
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	klog "github.com/go-kratos/kratos/v2/log"
@@ -19,13 +18,10 @@ type logger struct {
 }
 
 func New(opts ...loader.Option) loader.Loader {
-	o := loader.Options{}
-	for _, opt := range opts {
-		opt(&o)
-	}
+	options := loader.NewOptions(opts...)
 
 	return &logger{
-		opt: o,
+		opt: *options,
 	}
 }
 
@@ -35,13 +31,14 @@ func (loader *logger) Init(opts ...loader.Option) error {
 		opt(&loader.opt)
 	}
 
+	logOpts := make([]log.Option, 0)
 	cfg, ok := loader.opt.Context.Value(loggerKey{}).(*config.Logger)
-	if !ok {
-		return errors.New("logger: config not found")
+	if cfg != nil && ok {
+		loader.cfg = cfg
+		logOpts = options(cfg)
 	}
 
-	loader.cfg = cfg
-	log.DefaultLogger = log.New(options(cfg)...)       // 重写了log.DefaultLogger
+	log.DefaultLogger = log.New(logOpts...)            // 重写了log.DefaultLogger
 	klog.DefaultLogger = kratos.New(log.DefaultLogger) // 重写了klog.DefaultLogger
 
 	log.Infof("Loader [%s] init success", loader.String())

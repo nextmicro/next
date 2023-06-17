@@ -10,3 +10,15 @@ type Options struct {
 }
 
 type Option func(o *Options)
+
+func NewOptions(opts ...Option) *Options {
+	options := Options{
+		Context: context.Background(),
+	}
+
+	for _, o := range opts {
+		o(&options)
+	}
+
+	return &options
+}
