@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	klog "github.com/go-kratos/kratos/v2/log"
@@ -64,7 +65,7 @@ func (loader *logger) Watch() error {
 		log.DefaultLogger.SetLevel(log.ParseLevel(cfg.Level))
 		log.Infof("logger config change, successfully loaded, old: %+v, new: %+v", loader.cfg, cfg)
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, kconfig.ErrNotFound) {
 		return err
 	}
 
