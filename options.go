@@ -9,6 +9,7 @@ import (
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-volo/logger"
+	"github.com/nextmicro/next/runtime/loader"
 )
 
 // Option is an application option.
@@ -29,6 +30,7 @@ type Options struct {
 	registrar        registry.Registrar
 	registrarTimeout time.Duration
 	stopTimeout      time.Duration
+	loader           []loader.Loader
 	servers          []transport.Server
 
 	// Before and After funcs
@@ -71,6 +73,11 @@ func Context(ctx context.Context) Option {
 // Logger with service logger.
 func Logger(logger logger.Logger) Option {
 	return func(o *Options) { o.logger = logger }
+}
+
+// Loader with service loader.
+func Loader(loader ...loader.Loader) Option {
+	return func(o *Options) { o.loader = append(o.loader, loader...) }
 }
 
 // Server with transport servers.

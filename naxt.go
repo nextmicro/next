@@ -33,6 +33,7 @@ func New(opts ...Option) (*Next, error) {
 		runtime.Name(opt.name),
 		runtime.Version(opt.version),
 		runtime.Metadata(opt.metadata),
+		runtime.Loader(opt.loader...),
 	); err != nil {
 		return nil, err
 	}
