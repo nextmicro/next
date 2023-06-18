@@ -28,7 +28,12 @@ func New(opts ...Option) (*Next, error) {
 	}
 
 	run := runtime.NewRuntime()
-	if err := run.Init(); err != nil {
+	if err := run.Init(
+		runtime.ID(opt.id),
+		runtime.Name(opt.name),
+		runtime.Version(opt.version),
+		runtime.Metadata(opt.metadata),
+	); err != nil {
 		return nil, err
 	}
 

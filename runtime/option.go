@@ -3,6 +3,7 @@ package runtime
 import (
 	"github.com/nextmicro/next/runtime/loader"
 	"github.com/nextmicro/next/runtime/loader/logger"
+	"github.com/nextmicro/next/runtime/loader/tracing"
 )
 
 type Option func(o *Options)
@@ -20,7 +21,8 @@ type Options struct {
 func defaultOptions(opts ...Option) Options {
 	options := Options{
 		loader: []loader.Loader{
-			logger.New(), // logger loader
+			logger.New(),  // logger loader
+			tracing.New(), // tracing loader
 		},
 		metadata: make(map[string]string),
 	}

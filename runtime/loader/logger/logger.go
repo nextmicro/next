@@ -3,6 +3,8 @@ package logger
 import (
 	"context"
 	"errors"
+	"fmt"
+	"path/filepath"
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	klog "github.com/go-kratos/kratos/v2/log"
@@ -10,7 +12,12 @@ import (
 	config "github.com/nextmicro/next/api/config"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/logger/kratos"
+	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
+)
+
+const (
+	loggerPath = "/data/logs/%s/projlogs"
 )
 
 type logger struct {
@@ -28,18 +35,30 @@ func New(opts ...loader.Option) loader.Loader {
 
 // Init is a loader initializer.
 func (loader *logger) Init(opts ...loader.Option) error {
-	for _, opt := range opts {
-		opt(&loader.opt)
+	cfg := conf.AppConfig().GetLogger()
+	if cfg == nil {
+		cfg = &config.Logger{
+			Level:   "info",
+			Console: true,
+			File:    false,
+			Metadata: map[string]string{
+				"app_id":      conf.AppConfig().GetId(),
+				"app_name":    conf.AppConfig().GetName(),
+				"app_version": conf.AppConfig().GetVersion(),
+				"env":         env.DeployEnvironment(),
+				"instance_id": env.Hostname(),
+			},
+		}
 	}
 
-	logOpts := make([]log.Option, 0)
-	cfg, ok := loader.opt.Context.Value(loggerKey{}).(*config.Logger)
-	if cfg != nil && ok {
-		loader.cfg = cfg
-		logOpts = options(cfg)
+	if cfg.Path == "" {
+		cfg.Path = fmt.Sprintf(loggerPath, conf.AppConfig().GetName())
+	}
+	if cfg.Path == "" && env.DeployEnvironment() == env.Dev {
+		cfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
 	}
 
-	log.DefaultLogger = log.New(logOpts...)            // 重写了log.DefaultLogger
+	log.DefaultLogger = log.New(options(cfg)...)       // 重写了log.DefaultLogger
 	klog.DefaultLogger = kratos.New(log.DefaultLogger) // 重写了klog.DefaultLogger
 
 	log.Infof("Loader [%s] init success", loader.String())

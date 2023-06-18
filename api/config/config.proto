@@ -9,16 +9,44 @@ import "google/protobuf/duration.proto";
 
 // next micro global config
 message Next {
+  // service id
+  string id = 1;
   // service name
-  string name = 1;
+  string name = 2;
   // service version
-  string version = 2;
+  string version = 3;
+  // service metadata
+  map<string, string> metadata = 4;
+  // server config
+  Server  server = 5;
   // logger config
-  Logger  logger = 3;
+  Logger  logger = 10;
+  // tracing config
+  Tracing tracing = 11;
   // nacos config
-  Nacos   nacos = 4;
+  Nacos   nacos = 12;
   // middleware config
-  repeated Middleware middlewares = 5;
+  repeated Middleware middlewares = 20;
+}
+
+// server config
+message Server {
+  HTTP http = 1;
+  GRPC grpc = 2;
+}
+
+// http config
+message GRPC {
+  string network = 1;
+  string addr = 2;
+  google.protobuf.Duration timeout = 3;
+}
+
+// http config
+message HTTP {
+  string network = 1;
+  string addr = 2;
+  google.protobuf.Duration timeout = 3;
 }
 
 // logger config
@@ -28,6 +56,16 @@ message Logger {
   bool    console = 3;
   bool    file = 4;
   map<string, string> metadata = 5;
+}
+
+// tracing config
+message Tracing {
+  // disable tracing
+  bool    disable = 1;
+  // tracing endpoint
+  string  endpoint = 2;
+  // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
+  double  sampler = 3;
 }
 
 // nacos config
