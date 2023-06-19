@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/middleware"
-	v1 "github.com/nextmicro/next/api/config"
+	"github.com/nextmicro/next/api/config/v1"
 	conf "github.com/nextmicro/next/config"
 )
 

@@ -9,7 +9,7 @@ import (
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	klog "github.com/go-kratos/kratos/v2/log"
 	log "github.com/go-volo/logger"
-	config "github.com/nextmicro/next/api/config"
+	config "github.com/nextmicro/next/api/config/v1"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/logger/kratos"
 	"github.com/nextmicro/next/pkg/env"

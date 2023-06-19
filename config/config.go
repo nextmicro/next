@@ -14,7 +14,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
-	v1 "github.com/nextmicro/next/api/config"
+	"github.com/nextmicro/next/api/config/v1"
 	util "github.com/nextmicro/next/internal/pkg/file"
 	kUtil "github.com/nextmicro/next/pkg/env"
 )

@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-volo/logger"
 	tr "github.com/nextmicro/gokit/trace"
-	v1 "github.com/nextmicro/next/api/config"
+	"github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/runtime/loader"
 	"go.opentelemetry.io/otel/attribute"
