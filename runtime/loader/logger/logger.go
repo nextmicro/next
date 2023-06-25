@@ -35,16 +35,16 @@ func New(opts ...loader.Option) loader.Loader {
 
 // Init is a loader initializer.
 func (loader *logger) Init(opts ...loader.Option) error {
-	cfg := conf.AppConfig().GetLogger()
+	cfg := conf.ApplicationConfig().GetLogger()
 	if cfg == nil {
 		cfg = &config.Logger{
 			Level:   "info",
 			Console: true,
 			File:    false,
 			Metadata: map[string]string{
-				"app_id":      conf.AppConfig().GetId(),
-				"app_name":    conf.AppConfig().GetName(),
-				"app_version": conf.AppConfig().GetVersion(),
+				"app_id":      conf.ApplicationConfig().GetId(),
+				"app_name":    conf.ApplicationConfig().GetName(),
+				"app_version": conf.ApplicationConfig().GetVersion(),
 				"env":         env.DeployEnvironment(),
 				"instance_id": env.Hostname(),
 			},
@@ -52,7 +52,7 @@ func (loader *logger) Init(opts ...loader.Option) error {
 	}
 
 	if cfg.Path == "" {
-		cfg.Path = fmt.Sprintf(loggerPath, conf.AppConfig().GetName())
+		cfg.Path = fmt.Sprintf(loggerPath, conf.ApplicationConfig().GetName())
 	}
 	if cfg.Path == "" && env.DeployEnvironment() == env.Dev {
 		cfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")

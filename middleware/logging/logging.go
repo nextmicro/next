@@ -11,7 +11,12 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-volo/logger"
 	"github.com/nextmicro/gokit/timex"
+	middlew "github.com/nextmicro/next/middleware"
 )
+
+func init() {
+	middlew.Register("logger.client", Client)
+}
 
 // Redacter defines how to log an object
 type Redacter interface {

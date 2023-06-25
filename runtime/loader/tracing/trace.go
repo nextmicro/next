@@ -30,7 +30,7 @@ func New(opts ...loader.Option) loader.Loader {
 }
 
 func (loader *Tracing) Init(...loader.Option) (err error) {
-	var cfg = config.AppConfig().GetTracing()
+	var cfg = config.ApplicationConfig().GetTracing()
 	if cfg == nil {
 		cfg = &v1.Tracing{
 			Disable: true,
@@ -44,9 +44,9 @@ func (loader *Tracing) Init(...loader.Option) (err error) {
 		tr.WithEndpoint(cfg.Endpoint),
 		tr.WithSampler(cfg.Sampler),
 		tr.WithAttributes(
-			attribute.String("service.id", config.AppConfig().GetId()),
-			semconv.ServiceNameKey.String(config.AppConfig().GetName()),
-			semconv.ServiceVersionKey.String(config.AppConfig().GetVersion()),
+			attribute.String("service.id", config.ApplicationConfig().GetId()),
+			semconv.ServiceNameKey.String(config.ApplicationConfig().GetName()),
+			semconv.ServiceVersionKey.String(config.ApplicationConfig().GetVersion()),
 		),
 	}
 

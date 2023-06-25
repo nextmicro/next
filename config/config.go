@@ -57,7 +57,7 @@ func (c *Config) buildFileSource() []kConfig.Source {
 
 // buildNacosSource 构建nacos配置源
 func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
-	cfg := AppConfig().GetNacos()
+	cfg := ApplicationConfig().GetNacos()
 	if cfg == nil || len(cfg.Address) == 0 || len(cfg.Namespaces) == 0 {
 		return []kConfig.Source{}, nil
 	}
@@ -191,8 +191,8 @@ func AppScan() error {
 	return nil
 }
 
-// AppConfig 获取框架配置
-func AppConfig() *v1.Next {
+// ApplicationConfig 获取框架配置
+func ApplicationConfig() *v1.Next {
 	return nextConfig
 }
 

@@ -14,7 +14,7 @@ type Server struct {
 
 // NewServer creates an HTTP server by options.
 func NewServer(opts ...transport.ServerOption) *Server {
-	o, _ := transport.NewDefaultOptions(conf.AppConfig(), opts...)
+	o, _ := transport.NewDefaultOptions(conf.ApplicationConfig(), opts...)
 
 	return &Server{
 		Server: http.NewServer(

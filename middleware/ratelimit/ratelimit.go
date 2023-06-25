@@ -12,13 +12,13 @@ import (
 )
 
 func init() {
-	middleware.Register("bbr", Middleware)
+	middleware.Register("bbr", Server)
 }
 
 // ErrLimitExceed is service unavailable due to rate limit exceeded.
 var ErrLimitExceed = errors.New(429, "RATELIMIT", "service unavailable due to rate limit exceeded")
 
-func Middleware(c *config.Middleware) (middlewa.Middleware, error) {
+func Server(c *config.Middleware) (middlewa.Middleware, error) {
 	limiter := bbr.NewLimiter() //use default settings
 	return func(handler middlewa.Handler) middlewa.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {

@@ -35,7 +35,7 @@ func NewDefaultOptions(cfg *v1.Next, opts ...ServerOption) (*Options, error) {
 
 	// use custom config
 	for _, o := range opts {
-		if err := o.Apply(op, conf.AppConfig()); err != nil {
+		if err := o.Apply(op, conf.ApplicationConfig()); err != nil {
 			return nil, err
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-kratos/kratos/v2/middleware"
+	log "github.com/go-volo/logger"
 	configv1 "github.com/nextmicro/next/api/config/v1"
 )
 
@@ -67,4 +68,19 @@ func Register(name string, factory Factory) {
 // Create instantiates a middleware based on `cfg`.
 func Create(cfg *configv1.Middleware) (middleware.Middleware, error) {
 	return globalRegistry.Create(cfg)
+}
+
+func BuildMiddleware(_ms []*configv1.Middleware) (ms []middleware.Middleware, err error) {
+	for i := len(_ms) - 1; i >= 0; i-- {
+		m, err := Create(_ms[i])
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				log.Warnf("Skip does not exist middleware: %s", _ms[i].Name)
+				continue
+			}
+			return nil, err
+		}
+		ms = append(ms, m)
+	}
+	return ms, nil
 }
