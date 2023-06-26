@@ -1,0 +1,19 @@
+{
+  "database": {
+    "datasource": "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local",
+    "host": "localhost",
+    "password": "password"
+  },
+  "foo": "bar",
+  "nacos": {
+    "address": [
+      "localhost:8848"
+    ],
+    "data_id": "demo.json",
+    "group": "DEFAULT_GROUP",
+    "namespace_id": ""
+  },
+  "redis": {
+    "address": "127.0.0.1:6389"
+  }
+}

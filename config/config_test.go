@@ -16,7 +16,10 @@ type db struct {
 		Host       string `json:"host"`
 		Password   string `json:"password"`
 	} `json:"database"`
-	Foo string `json:"foo"`
+	Foo   string `json:"foo"`
+	Redis struct {
+		Address string `json:"address"`
+	} `json:"redis"`
 }
 
 func TestConfig_Init(t *testing.T) {
@@ -46,4 +49,17 @@ func TestConfig_Init(t *testing.T) {
 	err = cfg.Scan(&db)
 	assert.NoError(t, err)
 	assert.Equal(t, raw, db)
+}
+
+func TestConfig_InitA(t *testing.T) {
+	path := "../testdata/config/application-dev.json"
+	cfg, err := config.Init(path)
+	assert.NoError(t, err)
+
+	var db db
+	err = cfg.Scan(&db)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "127.0.0.1:6379", db.Redis.Address)
+	assert.Equal(t, "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local", db.Database.Datasource)
 }

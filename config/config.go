@@ -58,12 +58,12 @@ func (c *Config) buildFileSource() []kConfig.Source {
 // buildNacosSource 构建nacos配置源
 func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 	cfg := ApplicationConfig().GetNacos()
-	if cfg == nil || len(cfg.Address) == 0 || len(cfg.Namespaces) == 0 {
+	if cfg == nil || len(cfg.Address) == 0 {
 		return []kConfig.Source{}, nil
 	}
 
 	if cfg.GetCacheDir() == "" && kUtil.IsDev() {
-		cfg.CacheDir = fmt.Sprintf("%s/runtime/apollo", kUtil.WorkDir())
+		cfg.CacheDir = fmt.Sprintf("%s/runtime/nacos", kUtil.WorkDir())
 	} else if cfg.GetCacheDir() == "" {
 		cfg.CacheDir = fmt.Sprintf("/data/nacos/%s", cfg.DataId)
 	}

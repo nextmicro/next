@@ -21,6 +21,7 @@ func NewClient(ctx context.Context, opts ...http.ClientOption) (*Client, error) 
 
 	httpOpts := make([]http.ClientOption, 0, len(opts)+1)
 	httpOpts = append(httpOpts, http.WithMiddleware(ms...))
+	httpOpts = append(httpOpts, opts...)
 	client, err := http.NewClient(ctx, httpOpts...)
 	if err != nil {
 		return nil, err
