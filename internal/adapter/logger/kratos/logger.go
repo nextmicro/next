@@ -1,6 +1,8 @@
 package kratos
 
 import (
+	"fmt"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-volo/logger"
 )
@@ -13,7 +15,7 @@ type defaultLogger struct {
 }
 
 // New returns a new defaultLogger instance.
-func New(base logger.Logger) log.Logger {
+func New(base logger.Logger) *defaultLogger {
 	l := &defaultLogger{
 		base: base,
 	}
@@ -21,16 +23,28 @@ func New(base logger.Logger) log.Logger {
 	return l
 }
 
+func (l *defaultLogger) SetLogger() {
+	log.DefaultLogger = l
+	log.SetLogger(l)
+}
+
 func (l *defaultLogger) Log(level log.Level, keyvals ...interface{}) error {
 	base := l.base.WithCallDepth(defaultCallerSkipCount)
+
+	if len(keyvals) == 0 {
+		return nil
+	}
+	if (len(keyvals) & 1) == 1 {
+		keyvals = append(keyvals, "KEYVALS UNPAIRED")
+	}
 
 	msg := ""
 	fields := make(map[string]interface{})
 	for i := 0; i < len(keyvals); i += 2 {
-		if keyvals[i] == "msg" {
-			msg = keyvals[i+1].(string)
+		if keyvals[i] == log.DefaultMessageKey {
+			msg = fmt.Sprint(keyvals[i+1])
 		} else {
-			fields[keyvals[i].(string)] = keyvals[i+1]
+			fields[fmt.Sprint(keyvals[i])] = keyvals[i+1]
 		}
 	}
 	if len(fields) > 0 {

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strconv"
 
-	nacos "github.com/go-kratos/kratos/contrib/config/nacos/v2"
 	kConfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/env"
 	"github.com/go-kratos/kratos/v2/config/file"
-	"github.com/nacos-group/nacos-sdk-go/clients"
-	"github.com/nacos-group/nacos-sdk-go/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/nextmicro/next/api/config/v1"
+	"github.com/nextmicro/next/internal/adapter/config/nacos"
 	util "github.com/nextmicro/next/internal/pkg/file"
 	kUtil "github.com/nextmicro/next/pkg/env"
 )
@@ -135,7 +135,7 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 }
 
 // Init 初始化配置
-func Init(filename string) (*Config, error) {
+func Init(filename string) (kConfig.Config, error) {
 	cc := &Config{
 		path:     filepath.Dir(filename),
 		filename: filename,

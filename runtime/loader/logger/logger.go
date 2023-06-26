@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
-	klog "github.com/go-kratos/kratos/v2/log"
 	log "github.com/go-volo/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	conf "github.com/nextmicro/next/config"
-	"github.com/nextmicro/next/logger/kratos"
+	"github.com/nextmicro/next/internal/adapter/logger/kratos"
+	"github.com/nextmicro/next/internal/adapter/logger/nacos"
 	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
 )
@@ -58,8 +58,9 @@ func (loader *logger) Init(opts ...loader.Option) error {
 		cfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
 	}
 
-	log.DefaultLogger = log.New(options(cfg)...)       // 重写了log.DefaultLogger
-	klog.DefaultLogger = kratos.New(log.DefaultLogger) // 重写了klog.DefaultLogger
+	log.DefaultLogger = log.New(options(cfg)...)  // adapter logger
+	kratos.New(log.DefaultLogger).SetLogger()     // adapter kratos logger
+	nacos.NewNacos(log.DefaultLogger).SetLogger() // adapter nacos logger
 
 	log.Infof("Loader [%s] init success", loader.String())
 
