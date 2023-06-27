@@ -127,6 +127,13 @@ func WithTLSConfig(c *tls.Config) ClientOption {
 	}
 }
 
+// WithContext with client context.
+func WithContext(ctx context.Context) ClientOption {
+	return func(o *clientOptions) {
+		o.ctx = ctx
+	}
+}
+
 type Client struct {
 	opts clientOptions
 	*http.Client
