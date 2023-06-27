@@ -25,28 +25,46 @@ message Next {
   Tracing tracing = 11;
   // nacos config
   Nacos   nacos = 12;
-  // middleware config
-  repeated Middleware middlewares = 20;
 }
 
 // server config
 message Server {
-  HTTP http = 1;
-  GRPC grpc = 2;
+  HTTPServer http = 1;
+  GRPCServer grpc = 2;
 }
 
-// http config
-message GRPC {
+// client config
+message Client {
+  HTTPClient http = 1;
+  GRPCClient grpc = 2;
+}
+
+// grpc server config
+message GRPCServer {
   string network = 1;
   string addr = 2;
   google.protobuf.Duration timeout = 3;
+  repeated Middleware middlewares = 4;
 }
 
-// http config
-message HTTP {
+// http server config
+message HTTPServer {
   string network = 1;
   string addr = 2;
   google.protobuf.Duration timeout = 3;
+  repeated Middleware middlewares = 4;
+}
+
+// http client config
+message HTTPClient {
+  google.protobuf.Duration timeout = 3;
+  repeated Middleware middlewares = 4;
+}
+
+// grpc client config
+message GRPCClient {
+  google.protobuf.Duration timeout = 3;
+  repeated Middleware middlewares = 4;
 }
 
 // logger config
