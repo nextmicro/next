@@ -52,7 +52,30 @@ func TestConfig_Init(t *testing.T) {
 }
 
 func TestConfig_InitA(t *testing.T) {
-	path := "../testdata/config/application-dev.json"
+	data := `{
+  "database": {
+    "datasource": "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local",
+    "host": "localhost",
+    "password": "password"
+  },
+  "foo": "bar",
+  "redis": {
+    "address": "127.0.0.1:6379"
+  }
+}`
+
+	path := filepath.Join(os.TempDir(), "application-dev.json")
+	fh, err := os.Create(path)
+	assert.NoError(t, err)
+
+	defer func() {
+		fh.Close()
+		os.Remove(path)
+	}()
+
+	_, err = fh.Write([]byte(data))
+	assert.NoError(t, err)
+
 	cfg, err := config.Init(path)
 	assert.NoError(t, err)
 

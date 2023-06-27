@@ -14,9 +14,9 @@ func TestNewNext(t *testing.T) {
 	defer cancel()
 	// 准备测试数据和参数
 	opts := []next.Option{
-		next.ID("test-id"),
-		next.Name("test-name"),
-		next.Version("test-version"),
+		next.ID("test-ID"),
+		next.Name("test-Name"),
+		next.Version("test-Version"),
 		next.Context(ctx),
 		// 添加其他选项参数
 	}

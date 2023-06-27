@@ -11,11 +11,10 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-volo/logger"
 	"github.com/nextmicro/gokit/timex"
-	middlew "github.com/nextmicro/next/middleware"
 )
 
 func init() {
-	middlew.Register("logger.client", Client)
+	//middlew.Register("logger.client", )
 }
 
 // Redacter defines how to log an object
