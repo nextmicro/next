@@ -41,13 +41,15 @@ func (loader *logger) Init(opts ...loader.Option) error {
 			Level:   "info",
 			Console: true,
 			File:    false,
-			Metadata: map[string]string{
-				"app_id":      conf.ApplicationConfig().GetId(),
-				"app_name":    conf.ApplicationConfig().GetName(),
-				"app_version": conf.ApplicationConfig().GetVersion(),
-				"env":         env.DeployEnvironment(),
-				"instance_id": env.Hostname(),
-			},
+		}
+	}
+	if cfg.GetMetadata() == nil {
+		cfg.Metadata = map[string]string{
+			"app_id":      conf.ApplicationConfig().GetId(),
+			"app_name":    conf.ApplicationConfig().GetName(),
+			"app_version": conf.ApplicationConfig().GetVersion(),
+			"env":         env.DeployEnvironment(),
+			"instance_id": env.Hostname(),
 		}
 	}
 
