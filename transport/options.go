@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/nextmicro/next/api/config/v1"
-	conf "github.com/nextmicro/next/config"
 )
 
 type ServerOption interface {
@@ -35,7 +34,7 @@ func NewDefaultOptions(cfg *v1.Next, opts ...ServerOption) (*Options, error) {
 
 	// use custom config
 	for _, o := range opts {
-		if err := o.Apply(op, conf.ApplicationConfig()); err != nil {
+		if err := o.Apply(op, cfg); err != nil {
 			return nil, err
 		}
 	}
