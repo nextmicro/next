@@ -6,5 +6,5 @@ option go_package = "github.com/nextmicro/next/api/middleware/metadata/v1";
 
 // metadata middleware config.
 message Metadata {
-  repeated string Prefix = 1; // metadata prefix
+  repeated string prefix = 1; // metadata prefix
 }

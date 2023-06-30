@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-kratos/kratos/v2/metadata"
@@ -17,8 +18,8 @@ import (
 const namespace = "metadata"
 
 func init() {
-	middlew.Register(namespace+".client", Client)
-	middlew.Register(namespace+".server", Server)
+	middlew.Register("client."+namespace, Client)
+	middlew.Register("server."+namespace, Server)
 }
 
 // // Option is metadata option.
@@ -50,7 +51,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			return nil, err
 		}
 	}
-
+	fmt.Println(options.Prefix)
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromServerContext(ctx)
