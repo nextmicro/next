@@ -81,6 +81,9 @@ func BuildMiddleware(kind string, _ms []*configv1.Middleware) (ms []middleware.M
 			}
 			return nil, err
 		}
+
+		log.Infof("register middleware: [%s] success", _ms[i].Name)
+
 		ms = append(ms, m)
 	}
 	return ms, nil

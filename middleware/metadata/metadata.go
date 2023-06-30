@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-kratos/kratos/v2/metadata"
@@ -51,7 +50,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			return nil, err
 		}
 	}
-	fmt.Println(options.Prefix)
+	
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromServerContext(ctx)
