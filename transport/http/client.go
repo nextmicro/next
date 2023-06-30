@@ -176,7 +176,7 @@ func (c *Client) buildDialOptions(cfg *v1.HTTPClient, opts clientOptions) []http
 	// 将全局中间件放在最前面，然后是用户自定义的中间件
 	ms := make([]chain.Middleware, 0, len(opts.middleware)+len(cfg.GetMiddlewares()))
 	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware.BuildMiddleware(cfg.GetMiddlewares())
+		serverMs, _ := middleware.BuildMiddleware("client", cfg.GetMiddlewares())
 		ms = append(ms, serverMs...)
 	}
 	if opts.middleware != nil {

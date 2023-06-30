@@ -70,8 +70,9 @@ func Create(cfg *configv1.Middleware) (middleware.Middleware, error) {
 	return globalRegistry.Create(cfg)
 }
 
-func BuildMiddleware(_ms []*configv1.Middleware) (ms []middleware.Middleware, err error) {
+func BuildMiddleware(kind string, _ms []*configv1.Middleware) (ms []middleware.Middleware, err error) {
 	for i := len(_ms) - 1; i >= 0; i-- {
+		_ms[i].Name = kind + "." + _ms[i].Name
 		m, err := Create(_ms[i])
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {

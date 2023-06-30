@@ -183,6 +183,7 @@ func Init(filename string) (kConfig.Config, error) {
 // AppScan 框架默认配置
 func AppScan() error {
 	out := &v1.Next{}
+	DefaultConfig.Value("")
 	if err := DefaultConfig.Scan(out); err != nil {
 		return fmt.Errorf("failed to scan config: %s", err)
 	}

@@ -8,24 +8,29 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 	config "github.com/nextmicro/next/api/config/v1"
+	v1 "github.com/nextmicro/next/api/middleware/metadata/v1"
 	middlew "github.com/nextmicro/next/middleware"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
+const namespace = "metadata"
+
 func init() {
-	middlew.Register("metadata.client", Client)
-	middlew.Register("metadata.server", Server)
+	middlew.Register(namespace+".client", Client)
+	middlew.Register(namespace+".server", Server)
 }
 
 // // Option is metadata option.
 // type Option func(*options)
 type options struct {
-	prefix []string
-	md     metadata.Metadata
+	*v1.Metadata
+	md metadata.Metadata
 }
 
 func (o *options) hasPrefix(key string) bool {
 	k := strings.ToLower(key)
-	for _, prefix := range o.prefix {
+	for _, prefix := range o.GetPrefix() {
 		if strings.HasPrefix(k, prefix) {
 			return true
 		}
@@ -35,8 +40,15 @@ func (o *options) hasPrefix(key string) bool {
 
 // Server is middleware server-side metadata.
 func Server(c *config.Middleware) (middleware.Middleware, error) {
-	options := &options{
-		prefix: []string{"x-md-"}, // x-md-global-, x-md-local
+	options := options{
+		Metadata: &v1.Metadata{
+			Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
+		},
+	}
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
 
 	return func(handler middleware.Handler) middleware.Handler {
@@ -63,8 +75,15 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 
 // Client is middleware client-side metadata.
 func Client(c *config.Middleware) (middleware.Middleware, error) {
-	options := &options{
-		prefix: []string{"x-md-global-"},
+	options := options{
+		Metadata: &v1.Metadata{
+			Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
+		},
+	}
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
 
 	return func(handler middleware.Handler) middleware.Handler {

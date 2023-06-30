@@ -53,11 +53,10 @@ func (loader *logger) Init(opts ...loader.Option) error {
 		}
 	}
 
-	if cfg.Path == "" {
-		cfg.Path = fmt.Sprintf(loggerPath, conf.ApplicationConfig().GetName())
-	}
 	if cfg.Path == "" && env.DeployEnvironment() == env.Dev {
 		cfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
+	} else if cfg.Path == "" {
+		cfg.Path = fmt.Sprintf(loggerPath, conf.ApplicationConfig().GetName())
 	}
 
 	log.DefaultLogger = log.New(options(cfg)...)  // adapter logger
