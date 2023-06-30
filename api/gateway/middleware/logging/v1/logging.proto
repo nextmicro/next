@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package gateway.middleware.logging.v1;
-
-option go_package = "github.com/nextmicro/next/api/gateway/middleware/logging/v1";
-
-// logging middleware config.
-message Logging {}
