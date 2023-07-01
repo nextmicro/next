@@ -10,7 +10,7 @@ import (
 	log "github.com/go-volo/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/circuitbreaker/v1"
-	middlew "github.com/nextmicro/next/middleware"
+	chain "github.com/nextmicro/next/middleware"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -22,7 +22,7 @@ import (
 var ErrNotAllowed = errors.New(503, "CIRCUITBREAKER", "request failed due to circuit breaker triggered")
 
 func init() {
-	middlew.Register("circuitbreaker", Client)
+	chain.Register("circuitbreaker.client", Client)
 }
 
 type ratioTrigger struct {

@@ -50,7 +50,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			return nil, err
 		}
 	}
-	
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromServerContext(ctx)
@@ -77,7 +77,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 func Client(c *config.Middleware) (middleware.Middleware, error) {
 	options := options{
 		Metadata: &v1.Metadata{
-			Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
+			Prefix: []string{"x-md-global-"},
 		},
 	}
 	if c.Options != nil {
