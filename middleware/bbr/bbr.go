@@ -6,7 +6,7 @@ import (
 	"github.com/go-kratos/aegis/ratelimit"
 	"github.com/go-kratos/aegis/ratelimit/bbr"
 	"github.com/go-kratos/kratos/v2/errors"
-	middlewa "github.com/go-kratos/kratos/v2/middleware"
+	chain "github.com/go-kratos/kratos/v2/middleware"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/bbr"
 	"github.com/nextmicro/next/middleware"
@@ -21,7 +21,7 @@ func init() {
 // ErrLimitExceed is service unavailable due to rate limit exceeded.
 var ErrLimitExceed = errors.New(429, "RATELIMIT", "service unavailable due to rate limit exceeded")
 
-func Server(c *config.Middleware) (middlewa.Middleware, error) {
+func Server(c *config.Middleware) (chain.Middleware, error) {
 	cfg := &v1.BBR{}
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
@@ -44,7 +44,7 @@ func Server(c *config.Middleware) (middlewa.Middleware, error) {
 	}
 
 	limiter := bbr.NewLimiter(bbrOpts...) // use default settings
-	return func(handler middlewa.Handler) middlewa.Handler {
+	return func(handler chain.Handler) chain.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			done, e := limiter.Allow()
 			if e != nil {

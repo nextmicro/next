@@ -10,7 +10,7 @@ require (
 	github.com/nextmicro/gokit/trace v0.0.0-20230618105139-35a62aef9afc
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.16.0
-	google.golang.org/grpc v1.46.2
+	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -22,6 +22,7 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

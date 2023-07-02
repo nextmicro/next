@@ -1,0 +1,10 @@
+syntax = "proto3";
+package next.middleware.recovery.v1;
+option go_package = "github.com/nextmicro/next/api/middleware/recovery/v1";
+
+// 异常恢复中间件配置
+message Recovery {
+  int32 stack_size = 1; // 异常栈大小，默认64 << 10
+  bool disable_stack_all = 2; // 是否禁用所有异常栈，默认 false
+  bool disable_print_stack = 3; // 是否禁用打印异常栈, 默认 false
+}

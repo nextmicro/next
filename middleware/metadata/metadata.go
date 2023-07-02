@@ -9,7 +9,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/metadata/v1"
-	middlew "github.com/nextmicro/next/middleware"
+	chain "github.com/nextmicro/next/middleware"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -17,8 +17,8 @@ import (
 const namespace = "metadata"
 
 func init() {
-	middlew.Register("client."+namespace, Client)
-	middlew.Register("server."+namespace, Server)
+	chain.Register("client."+namespace, Client)
+	chain.Register("server."+namespace, Server)
 }
 
 // // Option is metadata option.
