@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  next.middleware.tracing.v1;
+
+option go_package = "github.com/nextmicro/next/api/middleware/tracing/v1";
+
+// Tracing middleware config.
+message Tracing {
+
+}
