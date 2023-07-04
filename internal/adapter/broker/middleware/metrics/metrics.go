@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"
-	"github.com/go-kratos/kratos/v2/metrics"
 	"github.com/nextmicro/next/internal/adapter/broker/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/codes"
@@ -83,8 +82,8 @@ func Client(opts ...Option) middleware.Middleware {
 // Server  metrics.
 func Server(opts ...Option) middleware.Middleware {
 	op := &options{
-		requests:    prom.NewCounter(metrics.MessagingConsumerMetricRequests),
-		millisecond: prom.NewHistogram(metrics.MessagingConsumerMetricMillisecond),
+		requests:    prom.NewCounter(MessagingConsumerMetricRequests),
+		millisecond: prom.NewHistogram(MessagingConsumerMetricMillisecond),
 	}
 	for _, opt := range opts {
 		opt(op)
