@@ -25,6 +25,8 @@ message Next {
   Tracing tracing = 11;
   // nacos config
   Nacos   nacos = 12;
+  // broker config
+  Broker  broker = 13;
 }
 
 // server config
@@ -74,6 +76,13 @@ message Logger {
   bool    console = 3;
   bool    file = 4;
   map<string, string> metadata = 5;
+}
+
+// config service
+message Broker {
+  string         name = 1;  // broker名
+  repeated string addrs = 2;  // broker地址
+  google.protobuf.Any options = 3; // broker配置
 }
 
 // tracing config
