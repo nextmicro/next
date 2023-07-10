@@ -3,18 +3,31 @@ package logging
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/selector"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-volo/logger"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/nextmicro/gokit/timex"
+	config "github.com/nextmicro/next/api/config/v1"
+	v1 "github.com/nextmicro/next/api/middleware/logging/v1"
+	chain "github.com/nextmicro/next/middleware"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+	"time"
 )
 
+const (
+	defaultFormat = "2006-01-02T15:04:05.999Z0700"
+)
+
+const namespace = "logging"
+
 func init() {
-	//middlew.Register("logger.client", )
+	chain.Register("client."+namespace, Client)
+	chain.Register("server."+namespace, Server)
 }
 
 // Redacter defines how to log an object
@@ -42,42 +55,33 @@ func extractArgs(req interface{}) string {
 	return fmt.Sprintf("%+v", req)
 }
 
-// mergeFields merges the fields
-func mergeFields(fields map[string]interface{}, m map[string]string) map[string]interface{} {
-	for k, v := range m {
-		fields[k] = v
-	}
-	return fields
-}
-
 // Client is an client logging middleware.
-func Client(opts ...Option) middleware.Middleware {
-	cfg := Options{
-		timeFormat:    defaultFormat,          // 默认时间格式
-		logger:        logger.DefaultLogger,   // 默认日志
-		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
-		handler: func(ctx context.Context, req any) map[string]string {
-			return make(map[string]string)
-		},
+func Client(c *config.Middleware) (middleware.Middleware, error) {
+	v := ptypes.DurationProto(time.Millisecond * 300)
+	options := &v1.Logging{
+		TimeFormat:    defaultFormat,
+		SlowThreshold: v,
 	}
-	for _, o := range opts {
-		o(&cfg)
+
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if cfg.disabled {
-				return handler(ctx, req)
-			}
-
 			var (
-				kind      string
-				method    string
-				callee    = "unknown"
-				startTime = time.Now()
+				kind          string
+				method        string
+				callee        = "unknown"
+				startTime     = time.Now()
+				targetAddress = "127.0.0.1"
 			)
 
 			if peer, ok := selector.FromPeerContext(ctx); ok {
 				callee = peer.Node.ServiceName()
+				targetAddress = peer.Node.Address()
 			}
 
 			if info, ok := transport.FromClientContext(ctx); ok {
@@ -88,12 +92,13 @@ func Client(opts ...Option) middleware.Middleware {
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":     startTime.Format(cfg.timeFormat),
-				"kind":      "client",
-				"component": kind,
-				"method":    method,
-				"duration":  timex.Duration(duration),
-				"callee":    callee,
+				"start":          startTime.Format(options.TimeFormat),
+				"kind":           "client",
+				"component":      kind,
+				"method":         method,
+				"duration":       timex.Duration(duration),
+				"callee":         callee,
+				"target_address": targetAddress,
 			}
 			if v := extractError(err); v != "" {
 				fields["error"] = v
@@ -102,12 +107,11 @@ func Client(opts ...Option) middleware.Middleware {
 				fields["code"] = se.Code
 				fields["reason"] = se.Reason
 			}
-			fields = mergeFields(fields, cfg.handler(ctx, req))
 
-			log := cfg.logger.WithContext(ctx).WithFields(fields)
+			log := logger.WithContext(ctx).WithFields(fields)
 
 			// show log
-			if duration > cfg.slowThreshold {
+			if duration > options.GetSlowThreshold().AsDuration() {
 				log.Info(kind + " client slow")
 			}
 			if err != nil {
@@ -118,50 +122,56 @@ func Client(opts ...Option) middleware.Middleware {
 
 			return resp, err
 		}
-	}
+	}, nil
 }
 
 // Server is an client logging middleware.
-func Server(opts ...Option) middleware.Middleware {
-	cfg := Options{
-		timeFormat:    defaultFormat,          // 默认时间格式
-		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
-		logger:        logger.DefaultLogger,   // 默认日志
-		handler: func(ctx context.Context, req any) map[string]string {
-			return make(map[string]string)
-		},
+func Server(c *config.Middleware) (middleware.Middleware, error) {
+	v := ptypes.DurationProto(time.Millisecond * 300)
+	options := &v1.Logging{
+		TimeFormat:    defaultFormat,
+		SlowThreshold: v,
 	}
-	for _, o := range opts {
-		o(&cfg)
+
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
 
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if cfg.disabled {
-				return handler(ctx, req)
-			}
-
 			var (
-				kind      string
-				method    string
-				caller    = "unknown"
-				startTime = time.Now()
+				kind          string
+				method        string
+				caller        = "unknown"
+				callerAddress = "127.0.0.1"
+				startTime     = time.Now()
 			)
 
 			if info, ok := transport.FromServerContext(ctx); ok {
 				kind = info.Kind().String()
 				method = info.Operation()
 			}
+			if md, ok := metadata.FromServerContext(ctx); ok {
+				if v := md.Get("x-md-local-caller"); v != "" {
+					caller = v
+				}
+				if v := md.Get("x-md-local-caller.address"); v != "" {
+					callerAddress = v
+				}
+			}
 
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":     startTime.Format(cfg.timeFormat),
-				"kind":      "server",
-				"component": kind,
-				"method":    method,
-				"duration":  timex.Duration(duration),
-				"caller":    caller,
+				"start":          startTime.Format(options.GetTimeFormat()),
+				"kind":           "server",
+				"component":      kind,
+				"method":         method,
+				"duration":       timex.Duration(duration),
+				"caller":         caller,
+				"caller.address": callerAddress,
 			}
 			if se := errors.FromError(err); se != nil {
 				fields["code"] = se.Code
@@ -170,11 +180,12 @@ func Server(opts ...Option) middleware.Middleware {
 			if v := extractError(err); v != "" {
 				fields["error"] = extractError(err)
 			}
-			fields = mergeFields(fields, cfg.handler(ctx, req))
 
-			log := cfg.logger.WithContext(ctx).WithFields(fields)
+			// TODO: add caller
+
+			log := logger.WithContext(ctx).WithFields(fields)
 			// show log
-			if duration > cfg.slowThreshold {
+			if duration > options.GetSlowThreshold().AsDuration() {
 				log.Info(kind + " server slow")
 			}
 			if err != nil {
@@ -185,5 +196,5 @@ func Server(opts ...Option) middleware.Middleware {
 
 			return resp, err
 		}
-	}
+	}, nil
 }

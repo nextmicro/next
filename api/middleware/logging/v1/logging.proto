@@ -4,5 +4,10 @@ package next.middleware.logging.v1;
 
 option go_package = "github.com/nextmicro/next/api/middleware/logging/v1";
 
+import "google/protobuf/duration.proto";
+
 // logging middleware config.
-message Logging {}
+message Logging {
+  string time_format = 1; // time format, default is 2006-01-02T15:04:05.999Z0700
+  google.protobuf.Duration slow_threshold = 2; // slow threshold, default is 300ms
+}
