@@ -8,7 +8,7 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	chain "github.com/go-kratos/kratos/v2/middleware"
 	config "github.com/nextmicro/next/api/config/v1"
-	v1 "github.com/nextmicro/next/api/middleware/bbr"
+	v1 "github.com/nextmicro/next/api/middleware/bbr/v1"
 	"github.com/nextmicro/next/middleware"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"

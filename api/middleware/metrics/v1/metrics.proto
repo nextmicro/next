@@ -1,0 +1,7 @@
+syntax = "proto3";
+package  next.middleware.metrics.v1;
+
+option go_package = "github.com/nextmicro/next/api/middleware/metrics/v1";
+
+// Metrics middleware config.
+message Metrics {}
