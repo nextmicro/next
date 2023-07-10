@@ -2,6 +2,8 @@ package next
 
 import (
 	"context"
+	v1 "github.com/nextmicro/next/api/config/v1"
+	"github.com/nextmicro/next/config"
 	"os"
 	"syscall"
 	"time"
@@ -17,15 +19,7 @@ type Next struct {
 
 // New create an application lifecycle manager.
 func New(opts ...Option) (*Next, error) {
-	opt := Options{
-		Ctx:              context.Background(),
-		Sigs:             []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL},
-		RegistrarTimeout: 10 * time.Second,
-		StopTimeout:      10 * time.Second,
-	}
-	for _, o := range opts {
-		o(&opt)
-	}
+	opt := buildOptions(config.ApplicationConfig(), opts...)
 
 	run := runtime.NewRuntime()
 	if err := run.Init(
@@ -70,4 +64,34 @@ func New(opts ...Option) (*Next, error) {
 	return &Next{
 		App: kratos.New(kOpts...),
 	}, nil
+}
+
+// buildOptions build options
+func buildOptions(cfg *v1.Next, opts ...Option) Options {
+	opt := Options{
+		Ctx:              context.Background(),
+		Sigs:             []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL},
+		RegistrarTimeout: 10 * time.Second,
+		StopTimeout:      10 * time.Second,
+	}
+	for _, o := range opts {
+		o(&opt)
+	}
+
+	if cfg != nil {
+		if opt.ID == "" && cfg.GetId() != "" {
+			opt.ID = cfg.GetId()
+		}
+		if opt.Name == "" && cfg.GetName() != "" {
+			opt.Name = cfg.GetName()
+		}
+		if opt.Version == "" && cfg.GetVersion() != "" {
+			opt.Version = cfg.GetVersion()
+		}
+		if opt.Metadata == nil && cfg.GetMetadata() != nil {
+			opt.Metadata = cfg.GetMetadata()
+		}
+	}
+
+	return opt
 }
