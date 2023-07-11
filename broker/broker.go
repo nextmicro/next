@@ -3,7 +3,6 @@ package broker
 
 import (
 	"context"
-	"github.com/nextmicro/next/internal/adapter/broker/kafka"
 )
 
 // Broker is an interface used for asynchronous messaging.
@@ -46,7 +45,7 @@ type Subscriber interface {
 
 var (
 	// DefaultBroker is the default Broker.
-	DefaultBroker Broker = kafka.New()
+	DefaultBroker Broker = NewMemoryBroker()
 )
 
 func Init(opts ...Option) error {
