@@ -26,14 +26,7 @@ func New(opts ...loader.Option) loader.Loader {
 
 // Init options
 func (loader *wrapper) Init(opts ...loader.Option) error {
-	for _, opt := range opts {
-		opt(&loader.opt)
-	}
-
 	cfg := conf.ApplicationConfig()
-	if cfg.GetBroker() == nil || len(cfg.GetBroker().GetAddrs()) == 0 {
-		return nil
-	}
 
 	var (
 		queueName = cfg.GetName()
