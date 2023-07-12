@@ -32,7 +32,10 @@ func New(opts ...Option) (*Next, error) {
 		return nil, err
 	}
 
-	opt.BeforeStart = append(opt.BeforeStart, run.Start)
+	if err := run.Start(opt.Ctx); err != nil {
+		return nil, err
+	}
+
 	opt.AfterStop = append(opt.AfterStop, run.Stop)
 
 	kOpts := []kratos.Option{

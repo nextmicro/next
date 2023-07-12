@@ -18,7 +18,7 @@ message Next {
   // service metadata
   map<string, string> metadata = 4;
   // server config
-  Server  server = 5;
+  Server  server = 6;
   // logger config
   Logger  logger = 10;
   // tracing config
