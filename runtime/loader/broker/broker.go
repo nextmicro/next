@@ -3,13 +3,16 @@ package broker
 import (
 	"context"
 	config "github.com/nextmicro/next/api/config/v1"
+	"github.com/nextmicro/next/broker"
 	conf "github.com/nextmicro/next/config"
+	"github.com/nextmicro/next/internal/adapter/broker/kafka"
 	"github.com/nextmicro/next/runtime/loader"
 )
 
 type wrapper struct {
-	opt loader.Options
-	cfg *config.Logger
+	initialized bool
+	opt         loader.Options
+	cfg         *config.Logger
 }
 
 func New(opts ...loader.Option) loader.Loader {
@@ -24,6 +27,24 @@ func New(opts ...loader.Option) loader.Loader {
 func (loader *wrapper) Init(opts ...loader.Option) error {
 	cfg := conf.ApplicationConfig().GetBroker()
 
+	if cfg == nil || len(cfg.Addrs) == 0 {
+		return nil
+	}
+
+	switch cfg.Name {
+	case "kafka":
+		kafka.New(
+			broker.Addrs(cfg.Addrs...),
+			kafka.Group(cfg.Group),
+		)
+	case "nsq":
+
+	default:
+		broker.DefaultBroker = broker.NewMemoryBroker()
+		return nil
+	}
+
+	loader.initialized = true
 	return nil
 }
 

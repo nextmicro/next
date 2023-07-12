@@ -85,6 +85,16 @@ message Broker {
   google.protobuf.Any options = 3; // broker配置
 }
 
+// broker publish config
+message Publish {
+
+}
+
+// broker subscribe config
+message Subscribe {
+
+}
+
 // tracing config
 message Tracing {
   // disable tracing
