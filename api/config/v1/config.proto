@@ -82,17 +82,17 @@ message Logger {
 message Broker {
   string         name = 1;  // broker名
   repeated string addrs = 2;  // broker地址
-  google.protobuf.Any options = 3; // broker配置
+  Publish       publish = 3; // broker发布配置
+  Subscribe     subscribe = 4; // broker订阅配置
 }
 
 // broker publish config
-message Publish {
-
-}
+message Publish {}
 
 // broker subscribe config
 message Subscribe {
-
+  string queue = 1; // queue name
+  bool auto_ack = 2; // auto ack
 }
 
 // tracing config

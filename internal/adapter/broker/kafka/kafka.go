@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 
 	"github.com/go-volo/logger"
-	"github.com/google/uuid"
 	adapter "github.com/nextmicro/next/internal/adapter/logger/log"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -97,13 +96,6 @@ func (broker *Kafka) getProducerConfig() *sarama.Config {
 	return sarama.NewConfig()
 }
 
-func (broker *Kafka) getGroup() string {
-	if v, ok := broker.opt.Context.Value(groupKey{}).(string); ok {
-		return v
-	}
-	return uuid.New().String()
-}
-
 func (broker *Kafka) Connect() error {
 	if broker.connected {
 		return nil
@@ -122,11 +114,9 @@ func (broker *Kafka) Connect() error {
 	cfg.Producer.Return.Successes = true
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 
-	if group := broker.getGroup(); group != "" {
-		cfg.ClientID = group
-	}
+	cfg.ClientID = broker.opt.SubscribeOptions.Queue
 
-	logger.Infof("broker [%s] group: %s", broker.String(), cfg.ClientID)
+	logger.Infof("broker [%s] queue: %s", broker.String(), cfg.ClientID)
 
 	client, err := sarama.NewClient(broker.opt.Addrs, cfg)
 	if err != nil {
@@ -269,16 +259,16 @@ func (broker *Kafka) Subscribe(topic string, h b.Handler, opts ...b.SubscribeOpt
 	var (
 		ms  []middleware.Middleware
 		opt = b.SubscribeOptions{
-			AutoAck: true,
-			Queue:   broker.getGroup(),
-			Context: context.Background(),
+			Queue:   broker.opt.SubscribeOptions.Queue,
+			AutoAck: broker.opt.SubscribeOptions.AutoAck,
+			Context: broker.opt.SubscribeOptions.Context,
 		}
 	)
 	for _, o := range opts {
 		o(&opt)
 	}
 
-	logger.Infof("broker [%s] group: %s Subscribe topic: %s", broker.String(), opt.Queue, topic)
+	logger.Infof("broker [%s] queue: %s Subscribe topic: %s", broker.String(), opt.Queue, topic)
 
 	ms = append(ms, broker.subscribeMs...)
 	topic = strings.ReplaceAll(topic, ".", "-")

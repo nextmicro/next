@@ -9,12 +9,10 @@ import (
 )
 
 const (
-	_caller   = "caller"
 	namespace = "kafka"
 )
 
 type (
-	groupKey                struct{}
 	serviceNameKey          struct{}
 	publishConfigKey        struct{}
 	subscribeConfigKey      struct{}
@@ -57,21 +55,12 @@ func setPublishOption(k, v interface{}) broker.PublishOption {
 	}
 }
 
-func ServiceName(serviceName string) broker.Option {
-	return setBrokerOption(serviceNameKey{}, serviceName)
-}
-
 func PublishConfig(c *sarama.Config) broker.Option {
 	return setBrokerOption(publishConfigKey{}, c)
 }
 
 func SubscribeConfig(c *sarama.Config) broker.Option {
 	return setBrokerOption(subscribeConfigKey{}, c)
-}
-
-// Group kafka group id
-func Group(group string) broker.Option {
-	return setBrokerOption(groupKey{}, group)
 }
 
 // Key The partitioning key for this message. Pre-existing Encoders include

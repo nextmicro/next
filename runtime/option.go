@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"github.com/nextmicro/next/runtime/loader"
+	"github.com/nextmicro/next/runtime/loader/broker"
 	"github.com/nextmicro/next/runtime/loader/logger"
 	"github.com/nextmicro/next/runtime/loader/tracing"
 )
@@ -23,6 +24,7 @@ func defaultOptions(opts ...Option) Options {
 		loader: []loader.Loader{
 			logger.New(),  // logger loader
 			tracing.New(), // tracing loader
+			broker.New(),  // broker loader
 		},
 		metadata: make(map[string]string),
 	}

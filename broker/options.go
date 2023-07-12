@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"crypto/tls"
+	"github.com/google/uuid"
 
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-volo/logger"
@@ -25,6 +26,9 @@ type Options struct {
 	TLSConfig *tls.Config
 	Addrs     []string
 	Secure    bool
+
+	PublishOptions   PublishOptions
+	SubscribeOptions SubscribeOptions
 }
 
 type PublishOptions struct {
@@ -34,10 +38,6 @@ type PublishOptions struct {
 }
 
 type SubscribeOptions struct {
-
-	// Other options for implementations of the interface
-	// can be stored in a context
-	Context context.Context
 	// Subscribers with the same queue name
 	// will create a shared subscription where each
 	// receives a subset of messages.
@@ -46,6 +46,9 @@ type SubscribeOptions struct {
 	// AutoAck defaults to true. When a handler returns
 	// with a nil error the message is acked.
 	AutoAck bool
+	// Other options for implementations of the interface
+	// can be stored in a context
+	Context context.Context
 }
 
 type Option func(*Options)
@@ -63,8 +66,14 @@ type SubscribeOption func(*SubscribeOptions)
 
 func NewOptions(opts ...Option) *Options {
 	options := Options{
-		Context: context.Background(),
-		Logger:  logger.DefaultLogger,
+		Context:        context.Background(),
+		Logger:         logger.DefaultLogger,
+		PublishOptions: PublishOptions{},
+		SubscribeOptions: SubscribeOptions{
+			AutoAck: true,
+			Queue:   uuid.New().String(),
+			Context: context.Background(),
+		},
 	}
 
 	for _, o := range opts {
@@ -101,26 +110,11 @@ func Codec(c encoding.Codec) Option {
 	}
 }
 
-// DisableAutoAck will disable auto acking of messages
-// after they have been handled.
-func DisableAutoAck() SubscribeOption {
-	return func(o *SubscribeOptions) {
-		o.AutoAck = false
-	}
-}
-
 // ErrorHandler will catch all broker errors that cant be handled
 // in normal way, for example Codec errors.
 func ErrorHandler(h Handler) Option {
 	return func(o *Options) {
 		o.ErrorHandler = h
-	}
-}
-
-// Queue sets the name of the queue to share messages on.
-func Queue(name string) SubscribeOption {
-	return func(o *SubscribeOptions) {
-		o.Queue = name
 	}
 }
 
@@ -149,5 +143,35 @@ func Logger(l logger.Logger) Option {
 func SubscribeContext(ctx context.Context) SubscribeOption {
 	return func(o *SubscribeOptions) {
 		o.Context = ctx
+	}
+}
+
+// Queue sets the name of the queue to share messages on.
+func Queue(name string) Option {
+	return func(o *Options) {
+		o.SubscribeOptions.Queue = name
+	}
+}
+
+// SubscribeQueue sets the name of the queue to share messages on.
+func SubscribeQueue(name string) SubscribeOption {
+	return func(o *SubscribeOptions) {
+		o.Queue = name
+	}
+}
+
+// DisableAutoAck will disable auto acking of messages
+// after they have been handled.
+func DisableAutoAck() Option {
+	return func(o *Options) {
+		o.SubscribeOptions.AutoAck = false
+	}
+}
+
+// SubscribeDisableAutoAck will disable auto acking of messages
+// after they have been handled.
+func SubscribeDisableAutoAck() SubscribeOption {
+	return func(o *SubscribeOptions) {
+		o.AutoAck = false
 	}
 }

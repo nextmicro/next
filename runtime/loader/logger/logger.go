@@ -35,6 +35,10 @@ func New(opts ...loader.Option) loader.Loader {
 
 // Init is a loader initializer.
 func (loader *logger) Init(opts ...loader.Option) error {
+	for _, opt := range opts {
+		opt(&loader.opt)
+	}
+
 	cfg := conf.ApplicationConfig().GetLogger()
 	if cfg == nil {
 		cfg = &config.Logger{
@@ -63,6 +67,7 @@ func (loader *logger) Init(opts ...loader.Option) error {
 	kratos.New(log.DefaultLogger).SetLogger()     // adapter kratos logger
 	nacos.NewNacos(log.DefaultLogger).SetLogger() // adapter nacos logger
 
+	loader.cfg = cfg
 	log.Infof("Loader [%s] init success", loader.String())
 
 	return nil
@@ -85,6 +90,7 @@ func (loader *logger) Watch() error {
 
 		log.DefaultLogger.SetLevel(log.ParseLevel(cfg.Level))
 		log.Infof("logger config change, successfully loaded, old: %+v, new: %+v", loader.cfg, cfg)
+		loader.cfg = cfg
 	})
 	if err != nil && !errors.Is(err, kconfig.ErrNotFound) {
 		return err
