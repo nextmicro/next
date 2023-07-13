@@ -17,6 +17,8 @@ message Next {
   string version = 3;
   // service metadata
   map<string, string> metadata = 4;
+  // registry config
+  Registry            registry = 5;
   // server config
   Server  server = 6;
   // logger config
@@ -93,6 +95,12 @@ message Publish {}
 message Subscribe {
   string queue = 1; // queue name
   bool auto_ack = 2; // auto ack
+}
+
+message Registry {
+  string name = 1;   // 注册中心类型: etcd，consul
+  string addrs = 2;   // 注册中心地址，多个用逗号隔开
+  google.protobuf.Duration timeout = 3; // 注册中心超时时间
 }
 
 // tracing config
