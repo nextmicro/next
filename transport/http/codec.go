@@ -88,12 +88,20 @@ func DefaultResponseEncoder(w http.ResponseWriter, r *http.Request, v interface{
 		return nil
 	}
 	if rd, ok := v.(Redirector); ok {
-		url, code := rd.Redirect()
-		http.Redirect(w, r, url, code)
+		uri, code := rd.Redirect()
+		http.Redirect(w, r, uri, code)
 		return nil
 	}
+
+	rsp := &CustomResponse{
+		Code:    0,
+		Reason:  "OK",
+		Message: "success",
+		Data:    v,
+		TraceId: trace.ExtractTraceId(r.Context()),
+	}
 	codec, _ := CodecForRequest(r, "Accept")
-	data, err := codec.Marshal(v)
+	data, err := codec.Marshal(rsp)
 	if err != nil {
 		return err
 	}
