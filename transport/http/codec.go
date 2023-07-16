@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"fmt"
+	"github.com/go-volo/logger"
+	"github.com/nextmicro/gokit/trace"
 	"github.com/nextmicro/next/internal/httputil"
 	"io"
 	"net/http"
@@ -40,7 +42,7 @@ type DecodeRequestFunc func(*http.Request, interface{}) error
 type EncodeResponseFunc func(http.ResponseWriter, *http.Request, interface{}) error
 
 // EncodeErrorFunc is encode error func.
-type EncodeErrorFunc func(http.ResponseWriter, *http.Request, error)
+type EncodeErrorFunc func(Context, error)
 
 // DefaultRequestVars decodes the request vars to object.
 func DefaultRequestVars(r *http.Request, v interface{}) error {
@@ -101,17 +103,49 @@ func DefaultResponseEncoder(w http.ResponseWriter, r *http.Request, v interface{
 }
 
 // DefaultErrorEncoder encodes the error to the HTTP response.
-func DefaultErrorEncoder(w http.ResponseWriter, r *http.Request, err error) {
-	se := errors.FromError(err)
-	codec, _ := CodecForRequest(r, "Accept")
-	body, err := codec.Marshal(se)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+func DefaultErrorEncoder(c Context, err error) {
+	response := &CustomResponse{
+		Code:     http.StatusInternalServerError,
+		Reason:   "UNKNOWN_REASON",
+		Message:  "服务内部错误",
+		Metadata: make(map[string]string),
+		TraceId:  trace.ExtractTraceId(c.Request().Context()),
 	}
-	w.Header().Set("Content-Type", httputil.ContentType(codec.Name()))
-	w.WriteHeader(int(se.Code))
-	_, _ = w.Write(body)
+
+	switch errType := err.(type) {
+	case *errors.Error:
+		response.Cause = errType.Unwrap()
+		response.Code = int(errType.Code)
+		response.Reason = errType.Reason
+		response.Message = errType.Message
+		response.Metadata = errType.Metadata
+	default:
+		se := errors.FromError(err)
+		response.Cause = se.Unwrap()
+		response.Code = int(se.GetCode())
+		response.Message = se.GetMessage()
+		response.Metadata = se.GetMetadata()
+	}
+
+	// Send response
+	if c.Request().Method == http.MethodHead { // Issue #608
+		c.Response().WriteHeader(http.StatusOK)
+	} else {
+		codec, _ := CodecForRequest(c.Request(), "Accept")
+		body, err := codec.Marshal(response)
+		if err != nil {
+			c.Response().WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		c.Response().Header().Set("Content-Type", httputil.ContentType(codec.Name()))
+		c.Response().WriteHeader(response.Code)
+		_, _ = c.Response().Write(body)
+	}
+
+	if response.Unwrap() != nil {
+		logger.WithContext(c.Context()).Error(response.Unwrap())
+	}
 }
 
 // CodecForRequest get encoding.Codec via http.Request

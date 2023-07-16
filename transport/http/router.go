@@ -83,7 +83,7 @@ func (r *router) Handle(method, relativePath string, h HandlerFunc, middleware .
 		ctx := r.pool.Get().(Context)
 		ctx.Reset(res, req)
 		if err := next(ctx); err != nil {
-			r.srv.ene(res, req, err)
+			r.srv.ene(ctx, err)
 		}
 		ctx.Reset(nil, nil)
 		r.pool.Put(ctx)

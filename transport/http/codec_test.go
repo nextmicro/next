@@ -95,8 +95,8 @@ func TestDefaultErrorEncoder(t *testing.T) {
 		err  = errors.New(511, "", "")
 	)
 	r.Header.Set("Content-Type", "application/json")
-
-	DefaultErrorEncoder(w, r, err)
+	c := NewContext(testRouter, r, w)
+	DefaultErrorEncoder(c, err)
 	if w.Header().Get("Content-Type") != "application/json" {
 		t.Errorf("expected %v, got %v", "application/json", w.Header().Get("Content-Type"))
 	}
