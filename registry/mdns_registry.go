@@ -7,16 +7,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/go-kratos/kratos/v2/registry"
-	log "github.com/go-volo/logger"
-	"github.com/google/uuid"
-	"github.com/nextmicro/next/pkg/mdns"
 	"io"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-kratos/kratos/v2/registry"
+	log "github.com/go-volo/logger"
+	"github.com/nextmicro/next/pkg/mdns"
 )
 
 var (
@@ -25,11 +26,9 @@ var (
 )
 
 type mdnsTxt struct {
-	ID        string
-	Service   string
-	Version   string
-	Endpoints []string
-	Metadata  map[string]string
+	Service  string
+	Version  string
+	Metadata map[string]string
 }
 
 type mdnsEntry struct {
@@ -41,27 +40,21 @@ type mdnsRegistry struct {
 	// the mdns domain
 	domain string
 
-	sync.Mutex
 	services map[string][]*mdnsEntry
 
 	mtx sync.RWMutex
-
-	// watchers
-	watchers map[string]*mdnsWatcher
 
 	// listener
 	listener chan *mdns.ServiceEntry
 }
 
-type mdnsWatcher struct {
-	id      string
-	service string
-	ch      chan *mdns.ServiceEntry
-	exit    chan struct{}
-	// the mdns domain
-	domain string
-	// the registry
-	registry *mdnsRegistry
+type watcher struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
+	domain     string
+	serverName string
+	watchChan  chan *mdns.ServiceEntry
+	exit       chan struct{}
 }
 
 func newRegistry() Registry {
@@ -71,7 +64,6 @@ func newRegistry() Registry {
 	return &mdnsRegistry{
 		domain:   domain,
 		services: make(map[string][]*mdnsEntry),
-		watchers: make(map[string]*mdnsWatcher),
 	}
 }
 
@@ -139,8 +131,8 @@ func decode(record []string) (*mdnsTxt, error) {
 }
 
 func (m *mdnsRegistry) Register(ctx context.Context, service *registry.ServiceInstance) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
 
 	entries, ok := m.services[service.Name]
 	// first entry, create wildcard used for list queries
@@ -189,12 +181,43 @@ func (m *mdnsRegistry) Register(ctx context.Context, service *registry.ServiceIn
 			e = &mdnsEntry{}
 		}
 
+		// get url
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return err
+		}
+
+		// get host and port
+		host, port, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			return err
+		}
+
+		// port to int
+		portNum, err := strconv.Atoi(port)
+		if err != nil {
+			return err
+		}
+
+		var rmd map[string]string
+		if service.Metadata == nil {
+			rmd = map[string]string{
+				"kind":    u.Scheme,
+				"version": service.Version,
+			}
+		} else {
+			rmd = make(map[string]string, len(service.Metadata)+2)
+			for k, v := range service.Metadata {
+				rmd[k] = v
+			}
+			rmd["kind"] = u.Scheme
+			rmd["version"] = service.Version
+		}
+
 		txt, err := encode(&mdnsTxt{
-			ID:        service.ID,
-			Service:   service.Name,
-			Version:   service.Version,
-			Endpoints: service.Endpoints,
-			Metadata:  service.Metadata,
+			Service:  service.Name,
+			Version:  service.Version,
+			Metadata: rmd,
 		})
 
 		if err != nil {
@@ -202,14 +225,7 @@ func (m *mdnsRegistry) Register(ctx context.Context, service *registry.ServiceIn
 			continue
 		}
 
-		host, pt, err := net.SplitHostPort(endpoint)
-		if err != nil {
-			gerr = err
-			continue
-		}
-		port, _ := strconv.Atoi(pt)
-
-		log.Debugf("[mdns] registry create new service with ip: %s for: %s", net.ParseIP(host).String(), host)
+		log.Infof("[mdns] registry create new service with ip: %s for: %s", net.ParseIP(host).String(), host)
 
 		// we got here, new node
 		s, err := mdns.NewMDNSService(
@@ -217,7 +233,7 @@ func (m *mdnsRegistry) Register(ctx context.Context, service *registry.ServiceIn
 			service.Name,
 			m.domain+".",
 			"",
-			port,
+			portNum,
 			[]net.IP{net.ParseIP(host)},
 			txt,
 		)
@@ -244,8 +260,8 @@ func (m *mdnsRegistry) Register(ctx context.Context, service *registry.ServiceIn
 }
 
 func (m *mdnsRegistry) Deregister(ctx context.Context, service *registry.ServiceInstance) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
 
 	var newEntries []*mdnsEntry
 
@@ -277,14 +293,14 @@ func (m *mdnsRegistry) Deregister(ctx context.Context, service *registry.Service
 }
 
 func (m *mdnsRegistry) GetService(ctx context.Context, serviceName string) ([]*registry.ServiceInstance, error) {
-	serviceMap := make(map[string]*registry.ServiceInstance)
+	serviceMap := make(map[string]*mdns.ServiceEntry)
 	entries := make(chan *mdns.ServiceEntry, 10)
 	done := make(chan bool)
 
 	p := mdns.DefaultParams(serviceName)
 	// set context with timeout
 	var cancel context.CancelFunc
-	p.Context, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+	p.Context, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	// set entries channel
 	p.Entries = entries
@@ -315,31 +331,7 @@ func (m *mdnsRegistry) GetService(ctx context.Context, serviceName string) ([]*r
 					continue
 				}
 
-				s, ok := serviceMap[txt.Version]
-				if !ok {
-					s = &registry.ServiceInstance{
-						Name:      txt.Service,
-						Version:   txt.Version,
-						Endpoints: txt.Endpoints,
-					}
-				}
-				addr := ""
-				// prefer ipv4 addrs
-				if len(e.AddrV4) > 0 {
-					addr = net.JoinHostPort(e.AddrV4.String(), fmt.Sprint(e.Port))
-					// else use ipv6
-				} else if len(e.AddrV6) > 0 {
-					addr = net.JoinHostPort(e.AddrV6.String(), fmt.Sprint(e.Port))
-				} else {
-					log.Infof("[mdns]: invalid endpoint received: %v", e)
-					continue
-				}
-
-				s.ID = strings.TrimSuffix(e.Name, "."+p.Service+"."+p.Domain+".")
-				s.Metadata = txt.Metadata
-				s.Endpoints = append(s.Endpoints, addr)
-
-				serviceMap[txt.Version] = s
+				serviceMap[txt.Version] = e
 			case <-p.Context.Done():
 				close(done)
 				return
@@ -355,175 +347,97 @@ func (m *mdnsRegistry) GetService(ctx context.Context, serviceName string) ([]*r
 	// wait for completion
 	<-done
 
-	// create list and return
-	services := make([]*registry.ServiceInstance, 0, len(serviceMap))
-
+	instances := make([]*registry.ServiceInstance, 0, len(serviceMap))
 	for _, service := range serviceMap {
-		services = append(services, service)
+		instance, err := instanceToServiceInstance(service)
+		if err != nil {
+			continue
+		}
+
+		instances = append(instances, instance)
 	}
 
-	return services, nil
+	return instances, nil
 }
 
 func (m *mdnsRegistry) Watch(ctx context.Context, serviceName string) (registry.Watcher, error) {
-	md := &mdnsWatcher{
-		id:       uuid.New().String(),
-		service:  serviceName,
-		ch:       make(chan *mdns.ServiceEntry, 32),
-		exit:     make(chan struct{}),
-		domain:   m.domain,
-		registry: m,
+	w := &watcher{
+		ctx:        ctx,
+		domain:     m.domain,
+		serverName: serviceName,
+		watchChan:  make(chan *mdns.ServiceEntry, 32),
+		exit:       make(chan struct{}),
 	}
+	w.ctx, w.cancel = context.WithCancel(ctx)
 
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-
-	// save the watcher
-	m.watchers[md.id] = md
-
-	// check of the listener exists
-	if m.listener != nil {
-		return md, nil
-	}
-
-	// start the listener
 	go func() {
-		// go to infinity
-		for {
-			m.mtx.Lock()
-
-			// just return if there are no watchers
-			if len(m.watchers) == 0 {
-				m.listener = nil
-				m.mtx.Unlock()
-				return
-			}
-
-			// check existing listener
-			if m.listener != nil {
-				m.mtx.Unlock()
-				return
-			}
-
-			// reset the listener
-			exit := make(chan struct{})
-			ch := make(chan *mdns.ServiceEntry, 32)
-			m.listener = ch
-
-			m.mtx.Unlock()
-
-			// send messages to the watchers
-			go func() {
-				send := func(w *mdnsWatcher, e *mdns.ServiceEntry) {
-					select {
-					case w.ch <- e:
-					default:
-					}
-				}
-
-				for {
-					select {
-					case <-exit:
-						return
-					case e, ok := <-ch:
-						if !ok {
-							return
-						}
-						m.mtx.RLock()
-						// send service entry to all watchers
-						for _, w := range m.watchers {
-							send(w, e)
-						}
-						m.mtx.RUnlock()
-					}
-				}
-			}()
-
-			// start listening, blocking call
-			mdns.Listen(ch, exit)
-
-			// mdns.Listen has unblocked
-			// kill the saved listener
-			m.mtx.Lock()
-			m.listener = nil
-			close(ch)
-			m.mtx.Unlock()
-		}
+		mdns.Listen(w.watchChan, w.exit)
 	}()
 
-	return md, nil
+	return w, nil
 }
 
-func (m *mdnsWatcher) Next() ([]*registry.ServiceInstance, error) {
-	for {
-		select {
-		case e := <-m.ch:
-			txt, err := decode(e.InfoFields)
-			if err != nil {
-				continue
-			}
-
-			if len(txt.Service) == 0 || len(txt.Version) == 0 {
-				continue
-			}
-
-			// Filter watch options
-			// wo.Service: Only keep services we care about
-			if len(m.service) > 0 && txt.Service != m.service {
-				continue
-			}
-			//var action string
-			//if e.TTL == 0 {
-			//	action = "delete"
-			//} else {
-			//	action = "create"
-			//}
-
-			service := &registry.ServiceInstance{
-				Name:      txt.Service,
-				Version:   txt.Version,
-				Endpoints: txt.Endpoints,
-			}
-
-			// skip anything without the domain we care about
-			suffix := fmt.Sprintf(".%s.%s.", service.Name, m.domain)
-			if !strings.HasSuffix(e.Name, suffix) {
-				continue
-			}
-
-			var addr string
-			if len(e.AddrV4) > 0 {
-				addr = net.JoinHostPort(e.AddrV4.String(), fmt.Sprint(e.Port))
-			} else if len(e.AddrV6) > 0 {
-				addr = net.JoinHostPort(e.AddrV6.String(), fmt.Sprint(e.Port))
-			} else {
-				addr = e.Addr.String()
-			}
-
-			service.ID = strings.TrimSuffix(e.Name, suffix)
-			service.Metadata = txt.Metadata
-			service.Endpoints = append(service.Endpoints, addr)
-
-			return []*registry.ServiceInstance{
-				service,
-			}, nil
-		case <-m.exit:
-			return nil, ErrWatcherStopped
-		}
-	}
-}
-
-func (m *mdnsWatcher) Stop() error {
+func (w *watcher) Next() ([]*registry.ServiceInstance, error) {
 	select {
-	case <-m.exit:
-		return nil
-	default:
-		close(m.exit)
-		// remove self from the registry
-		m.registry.mtx.Lock()
-		delete(m.registry.watchers, m.id)
-		m.registry.mtx.Unlock()
+	case <-w.ctx.Done():
+		return nil, w.ctx.Err()
+	case <-w.watchChan:
+		instances := make([]*mdns.ServiceEntry, 0)
+		entries := make(chan *mdns.ServiceEntry, 10)
+		done := make(chan bool)
+
+		p := mdns.DefaultParams(w.serverName)
+		// set context with timeout
+		var cancel context.CancelFunc
+		p.Context, cancel = context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		// set entries channel
+		p.Entries = entries
+		// set the domain
+		p.Domain = w.domain
+
+		go func() {
+			for {
+				select {
+				case e := <-entries:
+					// list record so skip
+					if p.Service == "_services" {
+						continue
+					}
+					if p.Domain != w.domain {
+						continue
+					}
+					txt, err := decode(e.InfoFields)
+					if err != nil {
+						continue
+					}
+
+					if txt.Service != w.serverName {
+						continue
+					}
+
+					instances = append(instances, e)
+				case <-p.Context.Done():
+					close(done)
+					return
+				}
+			}
+		}()
+
+		// execute the query
+		if err := mdns.Query(p); err != nil {
+			return nil, err
+		}
+
+		// wait for completion
+		<-done
+
+		return instancesToServiceInstances(instances), nil
 	}
+}
+
+func (w *watcher) Stop() error {
+	w.cancel()
 
 	return nil
 }
@@ -531,4 +445,53 @@ func (m *mdnsWatcher) Stop() error {
 // NewRegistry returns a new default registry which is mdns.
 func NewRegistry() Registry {
 	return newRegistry()
+}
+
+func instancesToServiceInstances(instances []*mdns.ServiceEntry) []*registry.ServiceInstance {
+	serviceInstances := make([]*registry.ServiceInstance, 0, len(instances))
+	for _, instance := range instances {
+		if instance.TTL == 0 {
+			continue
+		}
+
+		serviceInstance, err := instanceToServiceInstance(instance)
+		if err != nil {
+			continue
+		}
+		serviceInstances = append(serviceInstances, serviceInstance)
+	}
+	return serviceInstances
+}
+
+func instanceToServiceInstance(instance *mdns.ServiceEntry) (*registry.ServiceInstance, error) {
+	txt, err := decode(instance.InfoFields)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata := txt.Metadata
+	// Usually, it won't fail in kratos if register correctly
+	kind := ""
+	if k, ok := metadata["kind"]; ok {
+		kind = k
+	}
+
+	suffix := fmt.Sprintf(".%s.%s.", txt.Service, mdnsDomain)
+
+	var addr string
+	if len(instance.AddrV4) > 0 {
+		addr = net.JoinHostPort(instance.AddrV4.String(), fmt.Sprint(instance.Port))
+	} else if len(instance.AddrV6) > 0 {
+		addr = net.JoinHostPort(instance.AddrV6.String(), fmt.Sprint(instance.Port))
+	} else {
+		addr = instance.Addr.String()
+	}
+
+	return &registry.ServiceInstance{
+		ID:        strings.TrimSuffix(instance.Name, suffix),
+		Name:      txt.Service,
+		Version:   txt.Version,
+		Metadata:  metadata,
+		Endpoints: []string{fmt.Sprintf("%s://%s", kind, addr)},
+	}, nil
 }

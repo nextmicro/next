@@ -1,18 +1,39 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	http2 "net/http"
+	"fmt"
+	"github.com/nextmicro/next/internal/host"
+	"github.com/nextmicro/next/internal/httputil"
+	"io"
+	"net/http"
 	"time"
 
-	chain "github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/encoding"
+	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/selector"
-	"github.com/go-kratos/kratos/v2/transport/http"
-	v1 "github.com/nextmicro/next/api/config/v1"
-	"github.com/nextmicro/next/middleware"
+	"github.com/go-kratos/kratos/v2/selector/wrr"
+	"github.com/go-kratos/kratos/v2/transport"
 )
+
+func init() {
+	if selector.GlobalSelector() == nil {
+		selector.SetGlobalSelector(wrr.NewBuilder())
+	}
+}
+
+// DecodeErrorFunc is decode error func.
+type DecodeErrorFunc func(ctx context.Context, res *http.Response) error
+
+// EncodeRequestFunc is request encode func.
+type EncodeRequestFunc func(ctx context.Context, contentType string, in interface{}) (body []byte, err error)
+
+// DecodeResponseFunc is response decode func.
+type DecodeResponseFunc func(ctx context.Context, res *http.Response, out interface{}) error
 
 // ClientOption is HTTP client option.
 type ClientOption func(*clientOptions)
@@ -24,13 +45,13 @@ type clientOptions struct {
 	timeout      time.Duration
 	endpoint     string
 	userAgent    string
-	encoder      http.EncodeRequestFunc
-	decoder      http.DecodeResponseFunc
-	errorDecoder http.DecodeErrorFunc
-	transport    http2.RoundTripper
+	encoder      EncodeRequestFunc
+	decoder      DecodeResponseFunc
+	errorDecoder DecodeErrorFunc
+	transport    http.RoundTripper
 	nodeFilters  []selector.NodeFilter
 	discovery    registry.Discovery
-	middleware   []chain.Middleware
+	middleware   []middleware.Middleware
 	block        bool
 	subsetSize   int
 }
@@ -44,7 +65,7 @@ func WithSubset(size int) ClientOption {
 }
 
 // WithTransport with client transport.
-func WithTransport(trans http2.RoundTripper) ClientOption {
+func WithTransport(trans http.RoundTripper) ClientOption {
 	return func(o *clientOptions) {
 		o.transport = trans
 	}
@@ -65,7 +86,7 @@ func WithUserAgent(ua string) ClientOption {
 }
 
 // WithMiddleware with client middleware.
-func WithMiddleware(m ...chain.Middleware) ClientOption {
+func WithMiddleware(m ...middleware.Middleware) ClientOption {
 	return func(o *clientOptions) {
 		o.middleware = m
 	}
@@ -79,21 +100,21 @@ func WithEndpoint(endpoint string) ClientOption {
 }
 
 // WithRequestEncoder with client request encoder.
-func WithRequestEncoder(encoder http.EncodeRequestFunc) ClientOption {
+func WithRequestEncoder(encoder EncodeRequestFunc) ClientOption {
 	return func(o *clientOptions) {
 		o.encoder = encoder
 	}
 }
 
 // WithResponseDecoder with client response decoder.
-func WithResponseDecoder(decoder http.DecodeResponseFunc) ClientOption {
+func WithResponseDecoder(decoder DecodeResponseFunc) ClientOption {
 	return func(o *clientOptions) {
 		o.decoder = decoder
 	}
 }
 
 // WithErrorDecoder with client error decoder.
-func WithErrorDecoder(errorDecoder http.DecodeErrorFunc) ClientOption {
+func WithErrorDecoder(errorDecoder DecodeErrorFunc) ClientOption {
 	return func(o *clientOptions) {
 		o.errorDecoder = errorDecoder
 	}
@@ -127,99 +148,226 @@ func WithTLSConfig(c *tls.Config) ClientOption {
 	}
 }
 
-// WithContext with client context.
-func WithContext(ctx context.Context) ClientOption {
-	return func(o *clientOptions) {
-		o.ctx = ctx
-	}
-}
-
+// Client is an HTTP client.
 type Client struct {
-	opts clientOptions
-	*http.Client
+	opts     clientOptions
+	target   *Target
+	r        *resolver
+	cc       *http.Client
+	insecure bool
+	selector selector.Selector
 }
 
 // NewClient returns an HTTP client.
-func NewClient(cfg *v1.HTTPClient, opts ...ClientOption) (*Client, error) {
-	var (
-		err     error
-		options = clientOptions{
-			ctx:          context.Background(),
-			timeout:      2000 * time.Millisecond,
-			encoder:      http.DefaultRequestEncoder,
-			decoder:      http.DefaultResponseDecoder,
-			errorDecoder: http.DefaultErrorDecoder,
-			transport:    http2.DefaultTransport,
-			subsetSize:   25,
-		}
-	)
-
+func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
+	options := clientOptions{
+		ctx:          ctx,
+		timeout:      2000 * time.Millisecond,
+		encoder:      DefaultRequestEncoder,
+		decoder:      DefaultResponseDecoder,
+		errorDecoder: DefaultErrorDecoder,
+		transport:    http.DefaultTransport,
+		subsetSize:   25,
+	}
 	for _, o := range opts {
 		o(&options)
 	}
-
-	c := &Client{
-		opts: options,
+	if options.tlsConf != nil {
+		if tr, ok := options.transport.(*http.Transport); ok {
+			tr.TLSClientConfig = options.tlsConf
+		}
 	}
-
-	c.Client, err = http.NewClient(options.ctx, c.buildDialOptions(cfg, options)...)
+	insecure := options.tlsConf == nil
+	target, err := parseTarget(options.endpoint, insecure)
 	if err != nil {
 		return nil, err
 	}
-
-	return c, nil
+	selector := selector.GlobalSelector().Build()
+	var r *resolver
+	if options.discovery != nil {
+		if target.Scheme == "discovery" {
+			if r, err = newResolver(ctx, options.discovery, target, selector, options.block, insecure, options.subsetSize); err != nil {
+				return nil, fmt.Errorf("[http client] new resolver failed!err: %v", options.endpoint)
+			}
+		} else if _, _, err := host.ExtractHostPort(options.endpoint); err != nil {
+			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
+		}
+	}
+	return &Client{
+		opts:     options,
+		target:   target,
+		insecure: insecure,
+		r:        r,
+		cc: &http.Client{
+			Timeout:   options.timeout,
+			Transport: options.transport,
+		},
+		selector: selector,
+	}, nil
 }
 
-// buildDialOptions build dial options.
-func (c *Client) buildDialOptions(cfg *v1.HTTPClient, opts clientOptions) []http.ClientOption {
-	var options = make([]http.ClientOption, 0, 10)
-	// 将全局中间件放在最前面，然后是用户自定义的中间件
-	ms := make([]chain.Middleware, 0, len(opts.middleware)+len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware.BuildMiddleware("client", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
+// Invoke makes a rpc call procedure for remote service.
+func (client *Client) Invoke(ctx context.Context, method, path string, args interface{}, reply interface{}, opts ...CallOption) error {
+	var (
+		contentType string
+		body        io.Reader
+	)
+	c := defaultCallInfo(path)
+	for _, o := range opts {
+		if err := o.before(&c); err != nil {
+			return err
+		}
 	}
-	if opts.middleware != nil {
-		ms = append(ms, opts.middleware...)
+	if args != nil {
+		data, err := client.opts.encoder(ctx, c.contentType, args)
+		if err != nil {
+			return err
+		}
+		contentType = c.contentType
+		body = bytes.NewReader(data)
 	}
-	if opts.tlsConf != nil {
-		options = append(options, http.WithTLSConfig(opts.tlsConf))
+	url := fmt.Sprintf("%s://%s%s", client.target.Scheme, client.target.Authority, path)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return err
 	}
-	if opts.timeout != 0 {
-		options = append(options, http.WithTimeout(opts.timeout))
+	if contentType != "" {
+		req.Header.Set("Content-Type", c.contentType)
 	}
-	if opts.userAgent != "" {
-		options = append(options, http.WithUserAgent(opts.userAgent))
+	if client.opts.userAgent != "" {
+		req.Header.Set("User-Agent", client.opts.userAgent)
 	}
-	if opts.encoder != nil {
-		options = append(options, http.WithRequestEncoder(opts.encoder))
+	ctx = transport.NewClientContext(ctx, &Transport{
+		endpoint:     client.opts.endpoint,
+		reqHeader:    headerCarrier(req.Header),
+		operation:    c.operation,
+		request:      req,
+		pathTemplate: c.pathTemplate,
+	})
+	return client.invoke(ctx, req, args, reply, c, opts...)
+}
+
+func (client *Client) invoke(ctx context.Context, req *http.Request, args interface{}, reply interface{}, c callInfo, opts ...CallOption) error {
+	h := func(ctx context.Context, in interface{}) (interface{}, error) {
+		res, err := client.do(req.WithContext(ctx))
+		if res != nil {
+			cs := csAttempt{res: res}
+			for _, o := range opts {
+				o.after(&c, &cs)
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+		if err := client.opts.decoder(ctx, res, reply); err != nil {
+			return nil, err
+		}
+		return reply, nil
 	}
-	if opts.decoder != nil {
-		options = append(options, http.WithResponseDecoder(opts.decoder))
+	var p selector.Peer
+	ctx = selector.NewPeerContext(ctx, &p)
+	if len(client.opts.middleware) > 0 {
+		h = middleware.Chain(client.opts.middleware...)(h)
 	}
-	if opts.errorDecoder != nil {
-		options = append(options, http.WithErrorDecoder(opts.errorDecoder))
+	_, err := h(ctx, args)
+	return err
+}
+
+// Do send an HTTP request and decodes the body of response into target.
+// returns an error (of type *Error) if the response status code is not 2xx.
+func (client *Client) Do(req *http.Request, opts ...CallOption) (*http.Response, error) {
+	c := defaultCallInfo(req.URL.Path)
+	for _, o := range opts {
+		if err := o.before(&c); err != nil {
+			return nil, err
+		}
 	}
-	if opts.transport != nil {
-		options = append(options, http.WithTransport(opts.transport))
+
+	return client.do(req)
+}
+
+func (client *Client) do(req *http.Request) (*http.Response, error) {
+	var done func(context.Context, selector.DoneInfo)
+	if client.r != nil {
+		var (
+			err  error
+			node selector.Node
+		)
+		if node, done, err = client.selector.Select(req.Context(), selector.WithNodeFilter(client.opts.nodeFilters...)); err != nil {
+			return nil, errors.ServiceUnavailable("NODE_NOT_FOUND", err.Error())
+		}
+		if client.insecure {
+			req.URL.Scheme = "http"
+		} else {
+			req.URL.Scheme = "https"
+		}
+		req.URL.Host = node.Address()
+		req.Host = node.Address()
 	}
-	if opts.endpoint != "" {
-		options = append(options, http.WithEndpoint(opts.endpoint))
+	resp, err := client.cc.Do(req)
+	if err == nil {
+		err = client.opts.errorDecoder(req.Context(), resp)
 	}
-	if opts.discovery != nil {
-		options = append(options, http.WithDiscovery(opts.discovery))
+	if done != nil {
+		done(req.Context(), selector.DoneInfo{Err: err})
 	}
-	if len(opts.nodeFilters) > 0 {
-		options = append(options, http.WithNodeFilter(opts.nodeFilters...))
+	if err != nil {
+		return nil, err
 	}
-	if opts.block {
-		options = append(options, http.WithBlock())
+	return resp, nil
+}
+
+// Close tears down the Transport and all underlying connections.
+func (client *Client) Close() error {
+	if client.r != nil {
+		return client.r.Close()
 	}
-	if opts.subsetSize > 0 {
-		options = append(options, http.WithSubset(opts.subsetSize))
+	return nil
+}
+
+// DefaultRequestEncoder is an HTTP request encoder.
+func DefaultRequestEncoder(_ context.Context, contentType string, in interface{}) ([]byte, error) {
+	name := httputil.ContentSubtype(contentType)
+	body, err := encoding.GetCodec(name).Marshal(in)
+	if err != nil {
+		return nil, err
 	}
-	if len(ms) > 0 {
-		options = append(options, http.WithMiddleware(ms...))
+	return body, err
+}
+
+// DefaultResponseDecoder is an HTTP response decoder.
+func DefaultResponseDecoder(_ context.Context, res *http.Response, v interface{}) error {
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
 	}
-	return options
+	return CodecForResponse(res).Unmarshal(data, v)
+}
+
+// DefaultErrorDecoder is an HTTP error decoder.
+func DefaultErrorDecoder(_ context.Context, res *http.Response) error {
+	if res.StatusCode >= 200 && res.StatusCode <= 299 {
+		return nil
+	}
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	if err == nil {
+		e := new(errors.Error)
+		if err = CodecForResponse(res).Unmarshal(data, e); err == nil {
+			e.Code = int32(res.StatusCode)
+			return e
+		}
+	}
+	return errors.Newf(res.StatusCode, errors.UnknownReason, "").WithCause(err)
+}
+
+// CodecForResponse get encoding.Codec via http.Response
+func CodecForResponse(r *http.Response) encoding.Codec {
+	codec := encoding.GetCodec(httputil.ContentSubtype(r.Header.Get("Content-Type")))
+	if codec != nil {
+		return codec
+	}
+	return encoding.GetCodec("json")
 }

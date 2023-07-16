@@ -55,7 +55,11 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 		reg := etcd.New(client)
 		registry.DefaultRegistry = reg
 	default:
-		cfg.Name = "mdns"
+		if loader.cfg == nil {
+			loader.cfg = &config.Registry{
+				Name: "mdns",
+			}
+		}
 		registry.DefaultRegistry = registry.NewRegistry()
 	}
 
