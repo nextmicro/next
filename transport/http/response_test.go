@@ -18,14 +18,8 @@ func TestResponse(t *testing.T) {
 	c := NewContext(testRouter, req, rec)
 	res := &Response{Writer: rec}
 
-	// Before
-	res.Before(func() {
-		c.Response().Header().Set(HeaderServer, "echo")
-	})
-	// After
-	res.After(func() {
-		c.Response().Header().Set(HeaderXFrameOptions, "DENY")
-	})
+	c.Response().Header().Set(HeaderServer, "echo")
+	c.Response().Header().Set(HeaderXFrameOptions, "DENY")
 	res.Write([]byte("test"))
 	assert.Equal(t, "echo", rec.Header().Get(HeaderServer))
 	assert.Equal(t, "DENY", rec.Header().Get(HeaderXFrameOptions))
@@ -61,16 +55,10 @@ func TestResponse_ChangeStatusCodeBeforeWrite(t *testing.T) {
 	rec := httptest.NewRecorder()
 	res := &Response{Writer: rec}
 
-	res.Before(func() {
-		if 200 < res.Status && res.Status < 300 {
-			res.Status = 200
-		}
-	})
-
 	res.WriteHeader(209)
 	res.Write([]byte("test"))
 
-	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 209, rec.Code)
 	assert.Equal(t, "test", rec.Body.String())
 }
 
