@@ -23,7 +23,7 @@ type CustomResponse struct {
 	Reason   string            `json:"reason"`
 	Message  string            `json:"message"`
 	Data     interface{}       `json:"data"`
-	TraceId  string            `json:"trace_id"`
+	TraceId  string            `json:"trace_id,omitempty"`
 	Metadata map[string]string `json:"metadata,omitempty"`
 	Cause    error             `json:"-"`
 }
