@@ -122,9 +122,9 @@ func (c *wrapper) Response() *Response        { return c.res }
 func (c *wrapper) SetResponse(w *Response)    { c.res = w }
 func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
 	if tr, ok := transport.FromServerContext(c.req.Context()); ok {
-		return middleware.Chain(c.router.srv.middleware.Match(tr.Operation())...)(h)
+		return middleware.Chain(c.router.srv.matcher.Match(tr.Operation())...)(h)
 	}
-	return middleware.Chain(c.router.srv.middleware.Match(c.req.URL.Path)...)(h)
+	return middleware.Chain(c.router.srv.matcher.Match(c.req.URL.Path)...)(h)
 }
 func (c *wrapper) Bind(v interface{}) error      { return c.router.srv.decBody(c.req, v) }
 func (c *wrapper) BindVars(v interface{}) error  { return c.router.srv.decVars(c.req, v) }
