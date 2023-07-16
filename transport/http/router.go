@@ -66,26 +66,21 @@ func (r *router) Handle(method, relativePath string, h HandlerFunc, middleware .
 	if r.preMiddleware == nil {
 		next = applyMiddleware(h, middleware...)
 	} else {
-		next = func(c Context) error {
-			next = applyMiddleware(h, middleware...)
-			return next(c)
-		}
+		next = applyMiddleware(h, middleware...)
 		next = applyMiddleware(next, r.preMiddleware...)
 	}
 
-	_handler := http.Handler(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	handler := http.Handler(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		ctx := r.pool.Get().(Context)
 		ctx.Reset(res, req)
-
 		if err := next(ctx); err != nil {
 			r.srv.ene(res, req, err)
 		}
-
 		ctx.Reset(nil, nil)
 		r.pool.Put(ctx)
 	}))
 
-	r.srv.router.Handle(path.Join(r.prefix, relativePath), _handler).Methods(method)
+	r.srv.router.Handle(path.Join(r.prefix, relativePath), handler).Methods(method)
 }
 
 // Group returns a new router group.
