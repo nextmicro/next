@@ -41,9 +41,43 @@ func loggingFilter(next http.Handler) http.Handler {
 func authFilter(next HandlerFunc) HandlerFunc {
 	return func(c Context) error {
 		// Do stuff here
-		log.Println("auth:", c.Request().Method, c.Request().RequestURI)
+		log.Println("auth:", c.Request().Method, c.Request().RequestURI, " start")
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
-		return next(c)
+		err := next(c)
+		if err != nil {
+			return err
+		}
+
+		log.Println("auth stop")
+
+		return nil
+	}
+}
+
+func PreMiddleware(next HandlerFunc) HandlerFunc {
+	return func(c Context) error {
+		fmt.Println("PreMiddleware start")
+		err := next(c)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("PreMiddleware end")
+		return nil
+	}
+}
+
+// 自定义中间件
+func CustomMiddleware(next HandlerFunc) HandlerFunc {
+	return func(c Context) error {
+		fmt.Println("CustomMiddleware start")
+		err := next(c)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("CustomMiddleware end")
+		return nil
 	}
 }
 
@@ -52,12 +86,13 @@ func TestRoute(t *testing.T) {
 	srv := NewServer(
 		Filter(corsFilter, loggingFilter),
 	)
-	route := srv.Route("/v1")
+	route := srv.Route("/v1", PreMiddleware)
 	route.GET("/users/{name}", func(ctx Context) error {
 		u := new(User)
 		u.Name = ctx.Vars().Get("name")
 		return ctx.Result(200, u)
-	}, authFilter)
+	}, authFilter, CustomMiddleware)
+
 	route.POST("/users", func(ctx Context) error {
 		u := new(User)
 		if err := ctx.Bind(u); err != nil {
@@ -79,6 +114,7 @@ func TestRoute(t *testing.T) {
 	if e, err := srv.Endpoint(); err != nil || e == nil {
 		t.Fatal(e, err)
 	}
+
 	go func() {
 		if err := srv.Start(ctx); err != nil {
 			panic(err)

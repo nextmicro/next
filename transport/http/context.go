@@ -19,7 +19,7 @@ import (
 
 var _ Context = (*wrapper)(nil)
 
-type Response struct {
+type CustomResponse struct {
 	Code     int               `json:"code"`
 	Reason   string            `json:"reason"`
 	Message  string            `json:"message"`
@@ -30,7 +30,7 @@ type Response struct {
 }
 
 // Unwrap satisfies the Go 1.13 error wrapper interface.
-func (r *Response) Unwrap() error {
+func (r *CustomResponse) Unwrap() error {
 	return r.Cause
 }
 
@@ -42,7 +42,9 @@ type Context interface {
 	Form() url.Values
 	Header() http.Header
 	Request() *http.Request
-	Response() http.ResponseWriter
+	SetRequest(r *http.Request)
+	Response() *Response
+	SetResponse(r *Response)
 	Middleware(middleware.Handler) middleware.Handler
 	Bind(interface{}) error
 	BindVars(interface{}) error
@@ -79,8 +81,16 @@ func (w *responseWriter) Write(data []byte) (int, error) {
 type wrapper struct {
 	router *router
 	req    *http.Request
-	res    http.ResponseWriter
-	w      responseWriter
+	res    *Response
+}
+
+// NewContext returns a Context instance.
+func NewContext(r *router, req *http.Request, w http.ResponseWriter) Context {
+	return &wrapper{
+		router: r,
+		req:    req,
+		res:    &Response{},
+	}
 }
 
 func (c *wrapper) Header() http.Header {
@@ -106,8 +116,10 @@ func (c *wrapper) Form() url.Values {
 func (c *wrapper) Query() url.Values {
 	return c.req.URL.Query()
 }
-func (c *wrapper) Request() *http.Request        { return c.req }
-func (c *wrapper) Response() http.ResponseWriter { return c.res }
+func (c *wrapper) Request() *http.Request     { return c.req }
+func (c *wrapper) SetRequest(r *http.Request) { c.req = r }
+func (c *wrapper) Response() *Response        { return c.res }
+func (c *wrapper) SetResponse(w *Response)    { c.res = w }
 func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
 	if tr, ok := transport.FromServerContext(c.req.Context()); ok {
 		return middleware.Chain(c.router.srv.middleware.Match(tr.Operation())...)(h)
@@ -122,12 +134,17 @@ func (c *wrapper) Returns(v interface{}, err error) error {
 	if err != nil {
 		return err
 	}
-	return c.router.srv.enc(&c.w, c.req, v)
+	return c.router.srv.enc(c.res, c.req, v)
 }
 
 func (c *wrapper) Result(code int, v interface{}) error {
-	c.w.WriteHeader(code)
-	return c.router.srv.enc(&c.w, c.req, v)
+	c.res.WriteHeader(code)
+	err := c.router.srv.enc(c.res, c.req, v)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func (c *wrapper) JSON(code int, v interface{}) error {
@@ -169,10 +186,9 @@ func (c *wrapper) Stream(code int, contentType string, rd io.Reader) error {
 	return err
 }
 
-func (c *wrapper) Reset(res http.ResponseWriter, req *http.Request) {
-	c.w.reset(res)
-	c.res = res
+func (c *wrapper) Reset(w http.ResponseWriter, req *http.Request) {
 	c.req = req
+	c.res.reset(w)
 }
 
 func (c *wrapper) Context() context.Context {
@@ -211,7 +227,7 @@ func (c *wrapper) Value(key interface{}) interface{} {
 }
 
 func (c *wrapper) Success(data ...interface{}) error {
-	rsp := &Response{
+	rsp := &CustomResponse{
 		Message: "success",
 		TraceId: trace.ExtractTraceId(c.Context()),
 	}

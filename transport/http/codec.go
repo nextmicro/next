@@ -97,10 +97,7 @@ func DefaultResponseEncoder(w http.ResponseWriter, r *http.Request, v interface{
 	}
 	w.Header().Set("Content-Type", httputil.ContentType(codec.Name()))
 	_, err = w.Write(data)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // DefaultErrorEncoder encodes the error to the HTTP response.

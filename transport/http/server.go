@@ -200,14 +200,6 @@ func (s *Server) Use(selector string, m ...middleware.Middleware) {
 	s.middleware.Add(selector, m...)
 }
 
-// WrapHandler wraps `http.Handler` into `http.HandlerFunc`.
-func WrapHandler(h http.Handler) HandlerFunc {
-	return func(c Context) error {
-		h.ServeHTTP(c.Response(), c.Request())
-		return nil
-	}
-}
-
 // WalkRoute walks the router and all its sub-routers, calling walkFn for each route in the tree.
 func (s *Server) WalkRoute(fn WalkRouteFunc) error {
 	return s.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
@@ -235,7 +227,7 @@ func (s *Server) Route(prefix string, middlewares ...MiddlewareFunc) Router {
 
 // NewHandler registers an HTTP handler.
 func (s *Server) NewHandler(handler Handler, middlewares ...MiddlewareFunc) {
-	handler.Handle(newRouter("/", s, middlewares...))
+	handler.Handle(newRouter(handler.Prefix(), s, middlewares...))
 }
 
 // Handle registers a new route with a matcher for the URL path.

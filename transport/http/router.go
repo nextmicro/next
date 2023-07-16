@@ -16,6 +16,7 @@ type RouteInfo struct {
 }
 
 type Handler interface {
+	Prefix() string
 	Handle(router Router)
 }
 
@@ -25,7 +26,15 @@ type (
 
 	// HandlerFunc defines a function to serve HTTP requests.
 	HandlerFunc func(Context) error
+
+	BaseHandler struct{}
 )
+
+func (h *BaseHandler) Prefix() string {
+	return ""
+}
+
+func (h *BaseHandler) Handle(router Router) {}
 
 type Router interface {
 	GET(path string, handler HandlerFunc, m ...MiddlewareFunc)
@@ -55,7 +64,7 @@ func newRouter(prefix string, srv *Server, middleware ...MiddlewareFunc) *router
 		preMiddleware: middleware,
 	}
 	r.pool.New = func() interface{} {
-		return &wrapper{router: r}
+		return NewContext(r, nil, nil)
 	}
 	return r
 }
@@ -141,4 +150,26 @@ func applyMiddleware(h HandlerFunc, middleware ...MiddlewareFunc) HandlerFunc {
 		h = middleware[i](h)
 	}
 	return h
+}
+
+// WrapHandler wraps `http.Handler` into `http.HandlerFunc`.
+func WrapHandler(h http.Handler) HandlerFunc {
+	return func(c Context) error {
+		h.ServeHTTP(c.Response(), c.Request())
+		return nil
+	}
+}
+
+// WrapMiddleware wraps `func(http.Handler) http.Handler` into `http.MiddlewareFunc`
+func WrapMiddleware(m func(http.Handler) http.Handler) MiddlewareFunc {
+	return func(next HandlerFunc) HandlerFunc {
+		return func(c Context) (err error) {
+			m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				c.SetRequest(r)
+				c.SetResponse(NewResponse(w))
+				err = next(c)
+			})).ServeHTTP(c.Response(), c.Request())
+			return
+		}
+	}
 }
