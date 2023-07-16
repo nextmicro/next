@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
-	"github.com/nextmicro/gokit/trace"
 	"io"
 	"net/http"
 	"net/url"
@@ -59,7 +58,6 @@ type Context interface {
 	Stream(int, string, io.Reader) error
 	Reset(http.ResponseWriter, *http.Request)
 	Context() context.Context
-	Success(data ...interface{}) error
 }
 
 type responseWriter struct {
@@ -219,15 +217,4 @@ func (c *wrapper) Value(key interface{}) interface{} {
 		return nil
 	}
 	return c.req.Context().Value(key)
-}
-
-func (c *wrapper) Success(data ...interface{}) error {
-	rsp := &CustomResponse{
-		Message: "success",
-		TraceId: trace.ExtractTraceId(c.Context()),
-	}
-	if len(data) > 0 {
-		rsp.Data = data[0]
-	}
-	return c.JSON(http.StatusOK, rsp)
 }

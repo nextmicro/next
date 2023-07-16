@@ -90,7 +90,7 @@ func TestRoute(t *testing.T) {
 	route.GET("/users/{name}", func(ctx Context) error {
 		u := new(User)
 		u.Name = ctx.Vars().Get("name")
-		return ctx.Result(200, u)
+		return ctx.JSON(http.StatusOK, u)
 	}, authFilter, CustomMiddleware)
 
 	route.POST("/users", func(ctx Context) error {
@@ -98,7 +98,7 @@ func TestRoute(t *testing.T) {
 		if err := ctx.Bind(u); err != nil {
 			return err
 		}
-		return ctx.Result(201, u)
+		return ctx.JSON(http.StatusCreated, u)
 	})
 	route.PUT("/users", func(ctx Context) error {
 		u := new(User)
@@ -108,7 +108,12 @@ func TestRoute(t *testing.T) {
 		h := ctx.Middleware(func(ctx context.Context, in interface{}) (interface{}, error) {
 			return u, nil
 		})
-		return ctx.Returns(h(ctx, u))
+
+		res, err := h(ctx, u)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, res)
 	})
 
 	if e, err := srv.Endpoint(); err != nil || e == nil {
@@ -136,6 +141,7 @@ func testRoute(t *testing.T, srv *Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.Fatalf("code: %d", resp.StatusCode)
