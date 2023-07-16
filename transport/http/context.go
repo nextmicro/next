@@ -89,7 +89,7 @@ func NewContext(r *router, req *http.Request, w http.ResponseWriter) Context {
 	return &wrapper{
 		router: r,
 		req:    req,
-		res:    &Response{},
+		res:    NewResponse(w),
 	}
 }
 
@@ -139,12 +139,7 @@ func (c *wrapper) Returns(v interface{}, err error) error {
 
 func (c *wrapper) Result(code int, v interface{}) error {
 	c.res.WriteHeader(code)
-	err := c.router.srv.enc(c.res, c.req, v)
-	if err != nil {
-		return err
-	}
-
-	return err
+	return c.router.srv.enc(c.res, c.req, v)
 }
 
 func (c *wrapper) JSON(code int, v interface{}) error {

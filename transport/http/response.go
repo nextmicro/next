@@ -21,7 +21,10 @@ type (
 
 // NewResponse creates a new instance of Response.
 func NewResponse(w http.ResponseWriter) (r *Response) {
-	return &Response{Writer: w}
+	return &Response{
+		Writer: w,
+		Status: http.StatusOK,
+	}
 }
 
 // Header returns the header map for the writer that will be sent by
@@ -58,9 +61,6 @@ func (r *Response) WriteHeader(code int) {
 
 // Write writes the data to the connection as part of an HTTP reply.
 func (r *Response) Write(b []byte) (n int, err error) {
-	if r.Status == 0 {
-		r.Status = http.StatusOK
-	}
 	r.Writer.WriteHeader(r.Status)
 	n, err = r.Writer.Write(b)
 	r.Size += int64(n)
