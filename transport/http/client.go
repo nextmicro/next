@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/httputil"
+	middleware2 "github.com/nextmicro/next/middleware"
 	"io"
 	"net/http"
 	"time"
@@ -159,7 +161,7 @@ type Client struct {
 }
 
 // NewClient returns an HTTP client.
-func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*Client, error) {
 	options := clientOptions{
 		ctx:          ctx,
 		timeout:      2000 * time.Millisecond,
@@ -193,6 +195,13 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
 		}
 	}
+	serverMs := buildMiddlewareDialOptions(cfg)
+	// server middleware first
+	if len(serverMs) > 0 {
+		userMs := options.middleware
+		options.middleware = append(serverMs, userMs...)
+	}
+
 	return &Client{
 		opts:     options,
 		target:   target,
@@ -204,6 +213,17 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		},
 		selector: selector,
 	}, nil
+}
+
+// buildMiddlewareDialOptions build dial options.
+func buildMiddlewareDialOptions(cfg *v1.HTTPClient) []middleware.Middleware {
+	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
+	if cfg != nil && cfg.GetMiddlewares() != nil {
+		serverMs, _ := middleware2.BuildMiddleware("client", cfg.GetMiddlewares())
+		ms = append(ms, serverMs...)
+	}
+
+	return ms
 }
 
 // Invoke makes a rpc call procedure for remote service.

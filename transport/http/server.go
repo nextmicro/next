@@ -4,19 +4,21 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/internal/endpoint"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/matcher"
+	middleware2 "github.com/nextmicro/next/middleware"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
+	chain "github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -65,7 +67,7 @@ func Logger(_ log.Logger) ServerOption {
 // Middleware with service middleware option.
 func Middleware(m ...middleware.Middleware) ServerOption {
 	return func(o *Server) {
-		o.middleware.Use(m...)
+		o.middleware = append(o.middleware, m...)
 	}
 }
 
@@ -152,7 +154,8 @@ type Server struct {
 	address     string
 	timeout     time.Duration
 	filters     []FilterFunc
-	middleware  matcher.Matcher
+	middleware  []middleware.Middleware
+	matcher     matcher.Matcher
 	decVars     DecodeRequestFunc
 	decQuery    DecodeRequestFunc
 	decBody     DecodeRequestFunc
@@ -168,7 +171,7 @@ func NewServer(opts ...ServerOption) *Server {
 		network:     "tcp",
 		address:     ":0",
 		timeout:     1 * time.Second,
-		middleware:  matcher.New(),
+		matcher:     matcher.New(),
 		decVars:     DefaultRequestVars,
 		decQuery:    DefaultRequestQuery,
 		decBody:     DefaultRequestDecoder,
@@ -180,6 +183,14 @@ func NewServer(opts ...ServerOption) *Server {
 	for _, o := range opts {
 		o(srv)
 	}
+
+	serverMs := srv.buildMiddlewareOptions()
+	// server middleware first
+	if len(serverMs) > 0 {
+		userMs := srv.middleware
+		srv.middleware = append(serverMs, userMs...)
+	}
+	srv.matcher.Use(srv.middleware...)
 	srv.router.StrictSlash(srv.strictSlash)
 	srv.router.NotFoundHandler = http.DefaultServeMux
 	srv.router.MethodNotAllowedHandler = http.DefaultServeMux
@@ -191,13 +202,32 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
+// buildMiddlewareOptions builds the http server options.
+func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
+	cfg := conf.ApplicationConfig().GetServer().GetHttp()
+	if cfg.GetAddr() != "" {
+		s.address = cfg.GetAddr()
+	}
+	if cfg.GetTimeout().AsDuration() != 0 {
+		s.timeout = cfg.GetTimeout().AsDuration()
+	}
+
+	ms := make([]chain.Middleware, 0, len(cfg.GetMiddlewares()))
+	if cfg != nil && cfg.GetMiddlewares() != nil {
+		serverMs, _ := middleware2.BuildMiddleware("server", cfg.GetMiddlewares())
+		ms = append(ms, serverMs...)
+	}
+
+	return ms
+}
+
 // Use uses a service middleware with selector.
 // selector:
 //   - '/*'
 //   - '/helloworld.v1.Greeter/*'
 //   - '/helloworld.v1.Greeter/SayHello'
 func (s *Server) Use(selector string, m ...middleware.Middleware) {
-	s.middleware.Add(selector, m...)
+	s.matcher.Add(selector, m...)
 }
 
 // WalkRoute walks the router and all its sub-routers, calling walkFn for each route in the tree.
