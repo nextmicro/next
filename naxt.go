@@ -4,6 +4,7 @@ import (
 	"context"
 	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
+	"github.com/nextmicro/next/registry"
 	"os"
 	"syscall"
 	"time"
@@ -31,6 +32,8 @@ func New(opts ...Option) (*Next, error) {
 	); err != nil {
 		return nil, err
 	}
+
+	opt = buildOptions(config.ApplicationConfig(), opts...)
 
 	if err := run.Start(opt.Ctx); err != nil {
 		return nil, err
@@ -74,6 +77,7 @@ func buildOptions(cfg *v1.Next, opts ...Option) Options {
 	opt := Options{
 		Ctx:              context.Background(),
 		Sigs:             []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL},
+		Registrar:        registry.DefaultRegistry,
 		RegistrarTimeout: 10 * time.Second,
 		StopTimeout:      10 * time.Second,
 	}

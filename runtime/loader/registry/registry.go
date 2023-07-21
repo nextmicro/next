@@ -11,6 +11,7 @@ import (
 	"github.com/nextmicro/next/registry"
 	"github.com/nextmicro/next/runtime/loader"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"net"
 	"strings"
 )
 
@@ -33,23 +34,51 @@ func New(opts ...loader.Option) loader.Loader {
 func (loader *wrapper) Init(opts ...loader.Option) error {
 	cfg := conf.ApplicationConfig()
 	loader.cfg = cfg.GetRegistry()
+
+	// check if there are any addrs
+	var addrs []string
+
+	// iterate the options addresses
+	for _, address := range strings.Split(cfg.GetRegistry().GetAddrs(), ",") {
+		// check we have a port
+		addr, port, err := net.SplitHostPort(address)
+		if ae, ok := err.(*net.AddrError); ok && ae.Err == "missing port in address" {
+			port = "8500"
+			addr = address
+			addrs = append(addrs, net.JoinHostPort(addr, port))
+		} else if err == nil {
+			addrs = append(addrs, net.JoinHostPort(addr, port))
+		}
+	}
+
 	switch cfg.GetRegistry().GetName() {
 	case "consul":
+		_config := api.DefaultNonPooledConfig()
+		if len(addrs) > 0 {
+			_config.Address = addrs[0]
+		}
+
 		// new consul client
-		client, err := api.NewClient(api.DefaultConfig())
+		client, err := api.NewClient(_config)
 		if err != nil {
 			return err
 		}
+		// test the client
+		_, err = client.Agent().Host()
+		if err != nil {
+			return err
+		}
+
 		// new reg with consul client
 		reg := consul.New(client)
 		registry.DefaultRegistry = reg
 	case "etcd":
 		// new etcd client
 		client, err := clientv3.New(clientv3.Config{
-			Endpoints: strings.Split(cfg.GetRegistry().GetAddrs(), ","),
+			Endpoints: addrs,
 		})
 		if err != nil {
-			panic(err)
+			return err
 		}
 		// new reg with etcd client
 		reg := etcd.New(client)
