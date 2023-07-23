@@ -3,16 +3,31 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"time"
 
-	chain "github.com/go-kratos/kratos/v2/middleware"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	grpcinsecure "google.golang.org/grpc/credentials/insecure"
+	grpcmd "google.golang.org/grpc/metadata"
+
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/selector"
-	client "github.com/go-kratos/kratos/v2/transport/grpc"
-	v1 "github.com/nextmicro/next/api/config/v1"
-	"github.com/nextmicro/next/middleware"
-	"google.golang.org/grpc"
+	"github.com/go-kratos/kratos/v2/selector/wrr"
+	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/go-kratos/kratos/v2/transport/grpc/resolver/discovery"
+
+	// init resolver
+	_ "github.com/go-kratos/kratos/v2/transport/grpc/resolver/direct"
 )
+
+func init() {
+	if selector.GlobalSelector() == nil {
+		selector.SetGlobalSelector(wrr.NewBuilder())
+	}
+}
 
 // ClientOption is gRPC client option.
 type ClientOption func(o *clientOptions)
@@ -40,7 +55,7 @@ func WithTimeout(timeout time.Duration) ClientOption {
 }
 
 // WithMiddleware with client middleware.
-func WithMiddleware(m ...chain.Middleware) ClientOption {
+func WithMiddleware(m ...middleware.Middleware) ClientOption {
 	return func(o *clientOptions) {
 		o.middleware = m
 	}
@@ -88,29 +103,26 @@ func WithNodeFilter(filters ...selector.NodeFilter) ClientOption {
 	}
 }
 
-// WithPrintDiscoveryDebugLog with print discovery debug log
+// WithLogger with logger
+// Deprecated: use global logger instead.
+func WithLogger(_ log.Logger) ClientOption {
+	return func(o *clientOptions) {}
+}
+
 func WithPrintDiscoveryDebugLog(p bool) ClientOption {
 	return func(o *clientOptions) {
 		o.printDiscoveryDebugLog = p
 	}
 }
 
-// WithContext with client context.
-func WithContext(ctx context.Context) ClientOption {
-	return func(o *clientOptions) {
-		o.ctx = ctx
-	}
-}
-
 // clientOptions is gRPC Client
 type clientOptions struct {
-	ctx                    context.Context
 	endpoint               string
 	subsetSize             int
 	tlsConf                *tls.Config
 	timeout                time.Duration
 	discovery              registry.Discovery
-	middleware             []chain.Middleware
+	middleware             []middleware.Middleware
 	ints                   []grpc.UnaryClientInterceptor
 	streamInts             []grpc.StreamClientInterceptor
 	grpcOpts               []grpc.DialOption
@@ -119,81 +131,112 @@ type clientOptions struct {
 	printDiscoveryDebugLog bool
 }
 
-type Client struct {
-	opts clientOptions
-	*grpc.ClientConn
+// Dial returns a GRPC connection.
+func Dial(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, false, opts...)
 }
 
-func NewClient(cfg *v1.GRPCClient, opts ...ClientOption) (*Client, error) {
+// DialInsecure returns an insecure GRPC connection.
+func DialInsecure(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, true, opts...)
+}
+
+func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
 	options := clientOptions{
-		ctx:                    context.Background(),
 		timeout:                2000 * time.Millisecond,
-		balancerName:           "selector",
+		balancerName:           balancerName,
 		subsetSize:             25,
 		printDiscoveryDebugLog: true,
 	}
 	for _, o := range opts {
 		o(&options)
 	}
-
-	c := &Client{
-		opts: options,
+	ints := []grpc.UnaryClientInterceptor{
+		unaryClientInterceptor(options.middleware, options.timeout, options.filters),
+	}
+	sints := []grpc.StreamClientInterceptor{
+		streamClientInterceptor(options.filters),
 	}
 
-	conn, err := client.DialInsecure(options.ctx, c.buildDialOptions(cfg, options)...)
-	if err != nil {
-		return nil, err
+	if len(options.ints) > 0 {
+		ints = append(ints, options.ints...)
 	}
-	c.ClientConn = conn
+	if len(options.streamInts) > 0 {
+		sints = append(sints, options.streamInts...)
+	}
+	grpcOpts := []grpc.DialOption{
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}],"healthCheckConfig":{"serviceName":""}}`, options.balancerName)),
+		grpc.WithChainUnaryInterceptor(ints...),
+		grpc.WithChainStreamInterceptor(sints...),
+	}
 
-	return c, nil
+	if options.discovery != nil {
+		grpcOpts = append(grpcOpts,
+			grpc.WithResolvers(
+				discovery.NewBuilder(
+					options.discovery,
+					discovery.WithInsecure(insecure),
+					discovery.WithSubset(options.subsetSize),
+					discovery.PrintDebugLog(options.printDiscoveryDebugLog),
+				)))
+	}
+	if insecure {
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
+	}
+	if options.tlsConf != nil {
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(options.tlsConf)))
+	}
+	if len(options.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, options.grpcOpts...)
+	}
+	return grpc.DialContext(ctx, options.endpoint, grpcOpts...)
 }
 
-// buildDialOptions build dial options.
-func (c *Client) buildDialOptions(cfg *v1.GRPCClient, opts clientOptions) []client.ClientOption {
-	options := make([]client.ClientOption, 0, 10)
-	// 将全局中间件放在最前面，然后是用户自定义的中间件
-	ms := make([]chain.Middleware, 0, len(opts.middleware)+len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware.BuildMiddleware("client", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
+func unaryClientInterceptor(ms []middleware.Middleware, timeout time.Duration, filters []selector.NodeFilter) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		ctx = transport.NewClientContext(ctx, &Transport{
+			endpoint:    cc.Target(),
+			operation:   method,
+			reqHeader:   headerCarrier{},
+			nodeFilters: filters,
+		})
+		if timeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, timeout)
+			defer cancel()
+		}
+		h := func(ctx context.Context, req interface{}) (interface{}, error) {
+			if tr, ok := transport.FromClientContext(ctx); ok {
+				header := tr.RequestHeader()
+				keys := header.Keys()
+				keyvals := make([]string, 0, len(keys))
+				for _, k := range keys {
+					keyvals = append(keyvals, k, header.Get(k))
+				}
+				ctx = grpcmd.AppendToOutgoingContext(ctx, keyvals...)
+			}
+			return reply, invoker(ctx, method, req, reply, cc, opts...)
+		}
+		if len(ms) > 0 {
+			h = middleware.Chain(ms...)(h)
+		}
+		var p selector.Peer
+		ctx = selector.NewPeerContext(ctx, &p)
+		_, err := h(ctx, req)
+		return err
 	}
-	if opts.middleware != nil {
-		ms = append(ms, opts.middleware...)
-	}
-	if len(ms) > 0 {
-		options = append(options, client.WithMiddleware(ms...))
-	}
-	if opts.endpoint != "" {
-		options = append(options, client.WithEndpoint(opts.endpoint))
-	}
-	if opts.subsetSize > 0 {
-		options = append(options, client.WithSubset(opts.subsetSize))
-	}
-	if opts.timeout > 0 {
-		options = append(options, client.WithTimeout(opts.timeout))
-	}
-	if opts.discovery != nil {
-		options = append(options, client.WithDiscovery(opts.discovery))
-	}
-	if opts.tlsConf != nil {
-		options = append(options, client.WithTLSConfig(opts.tlsConf))
-	}
-	if opts.ints != nil {
-		options = append(options, client.WithUnaryInterceptor(opts.ints...))
-	}
-	if opts.streamInts != nil {
-		options = append(options, client.WithStreamInterceptor(opts.streamInts...))
-	}
-	if opts.grpcOpts != nil {
-		options = append(options, client.WithOptions(opts.grpcOpts...))
-	}
-	if opts.filters != nil {
-		options = append(options, client.WithNodeFilter(opts.filters...))
-	}
-	if opts.printDiscoveryDebugLog {
-		options = append(options, client.WithPrintDiscoveryDebugLog(opts.printDiscoveryDebugLog))
-	}
+}
 
-	return options
+func streamClientInterceptor(filters []selector.NodeFilter) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) { // nolint
+		ctx = transport.NewClientContext(ctx, &Transport{
+			endpoint:    cc.Target(),
+			operation:   method,
+			reqHeader:   headerCarrier{},
+			nodeFilters: filters,
+		})
+		var p selector.Peer
+		ctx = selector.NewPeerContext(ctx, &p)
+		return streamer(ctx, desc, cc, method, opts...)
+	}
 }
