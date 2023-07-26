@@ -5,13 +5,15 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/go-kratos/kratos/v2"
 	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/httputil"
 	middleware2 "github.com/nextmicro/next/middleware"
-	"io"
-	"net/http"
-	"time"
 
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -256,6 +258,10 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args inte
 	}
 	if client.opts.userAgent != "" {
 		req.Header.Set("User-Agent", client.opts.userAgent)
+	}
+	app, ok := kratos.FromContext(ctx)
+	if ok {
+		req.Header.Set("x-md-local-callee", app.Name())
 	}
 	ctx = transport.NewClientContext(ctx, &Transport{
 		endpoint:     client.opts.endpoint,

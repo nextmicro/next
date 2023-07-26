@@ -3,6 +3,8 @@ package logging
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -16,7 +18,6 @@ import (
 	chain "github.com/nextmicro/next/middleware"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"time"
 )
 
 const (
@@ -72,16 +73,16 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
-				kind          string
-				method        string
-				callee        = "unknown"
-				startTime     = time.Now()
-				targetAddress = "127.0.0.1"
+				kind        string
+				method      string
+				callee      = "unknown"
+				startTime   = time.Now()
+				nodeAddress = ""
 			)
 
 			if peer, ok := selector.FromPeerContext(ctx); ok {
 				callee = peer.Node.ServiceName()
-				targetAddress = peer.Node.Address()
+				nodeAddress = peer.Node.Address()
 			}
 
 			if info, ok := transport.FromClientContext(ctx); ok {
@@ -92,14 +93,17 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":          startTime.Format(options.TimeFormat),
-				"kind":           "client",
-				"component":      kind,
-				"method":         method,
-				"duration":       timex.Duration(duration),
-				"callee":         callee,
-				"target_address": targetAddress,
+				"start":     startTime.Format(options.TimeFormat),
+				"kind":      "client",
+				"component": kind,
+				"method":    method,
+				"duration":  timex.Duration(duration),
+				"callee":    callee,
 			}
+			if nodeAddress != "" {
+				fields["callee.address"] = nodeAddress
+			}
+
 			if v := extractError(err); v != "" {
 				fields["error"] = v
 			}
@@ -142,11 +146,10 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
-				kind          string
-				method        string
-				caller        = "unknown"
-				callerAddress = "127.0.0.1"
-				startTime     = time.Now()
+				kind      string
+				method    string
+				caller    = "unknown"
+				startTime = time.Now()
 			)
 
 			if info, ok := transport.FromServerContext(ctx); ok {
@@ -157,21 +160,17 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 				if v := md.Get("x-md-local-caller"); v != "" {
 					caller = v
 				}
-				if v := md.Get("x-md-local-caller.address"); v != "" {
-					callerAddress = v
-				}
 			}
 
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":          startTime.Format(options.GetTimeFormat()),
-				"kind":           "server",
-				"component":      kind,
-				"method":         method,
-				"duration":       timex.Duration(duration),
-				"caller":         caller,
-				"caller.address": callerAddress,
+				"start":     startTime.Format(options.GetTimeFormat()),
+				"kind":      "server",
+				"component": kind,
+				"method":    method,
+				"duration":  timex.Duration(duration),
+				"caller":    caller,
 			}
 			if se := errors.FromError(err); se != nil {
 				fields["code"] = se.Code
@@ -180,8 +179,6 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			if v := extractError(err); v != "" {
 				fields["error"] = extractError(err)
 			}
-
-			// TODO: add caller
 
 			log := logger.WithContext(ctx).WithFields(fields)
 			// show log

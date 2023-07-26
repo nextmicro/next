@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-kratos/kratos/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
@@ -212,6 +213,10 @@ func unaryClientInterceptor(ms []middleware.Middleware, timeout time.Duration, f
 				keyvals := make([]string, 0, len(keys))
 				for _, k := range keys {
 					keyvals = append(keyvals, k, header.Get(k))
+				}
+				app, ok := kratos.FromContext(ctx)
+				if ok {
+					keyvals = append(keyvals, "x-md-local-caller", app.Name())
 				}
 				ctx = grpcmd.AppendToOutgoingContext(ctx, keyvals...)
 			}
