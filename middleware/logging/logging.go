@@ -80,7 +80,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 				nodeAddress = ""
 			)
 
-			if peer, ok := selector.FromPeerContext(ctx); ok {
+			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
 				callee = peer.Node.ServiceName()
 				nodeAddress = peer.Node.Address()
 			}

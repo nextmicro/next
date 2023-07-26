@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"time"
+
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/metrics"
@@ -14,7 +16,6 @@ import (
 	metric "github.com/nextmicro/next/pkg/metrics"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"time"
 )
 
 const namespace = "metrics"
@@ -59,7 +60,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			)
 
 			startTime := time.Now()
-			if peer, ok := selector.FromPeerContext(ctx); ok {
+			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
 				callee = peer.Node.ServiceName()
 			}
 
