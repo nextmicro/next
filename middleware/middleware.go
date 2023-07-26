@@ -79,7 +79,9 @@ func BuildMiddleware(kind string, _ms []*configv1.Middleware) (ms []middleware.M
 				log.Warnf("Skip does not exist middleware: %s", _ms[i].Name)
 				continue
 			}
-			return nil, err
+
+			log.Errorf("register middleware: [%s] error: %v", _ms[i].Name, err)
+			continue
 		}
 
 		log.Infof("register middleware: [%s] success", _ms[i].Name)

@@ -8,6 +8,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/go-volo/logger"
 	configv1 "github.com/nextmicro/next/api/config/v1"
+	v1 "github.com/nextmicro/next/api/middleware/tracing/v1"
 	chain "github.com/nextmicro/next/middleware"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/baggage"
@@ -16,6 +17,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -23,7 +26,8 @@ const (
 )
 
 func init() {
-	chain.Register("tracing.client", Client)
+	chain.Register("client.tracing", Client)
+	chain.Register("server.tracing", Server)
 }
 
 // TraceID returns a traceid valuer.
@@ -48,6 +52,15 @@ func SpanID() logger.Valuer {
 
 // Client returns a new client middleware for OpenTelemetry.
 func Client(c *configv1.Middleware) (middleware.Middleware, error) {
+	opt := options{
+		Tracing: &v1.Tracing{},
+	}
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, opt, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
+	}
+
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
@@ -99,6 +112,15 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 
 // Server returns a new server middleware for OpenTelemetry.
 func Server(c *configv1.Middleware) (middleware.Middleware, error) {
+	opt := options{
+		Tracing: &v1.Tracing{},
+	}
+	if c.Options != nil {
+		if err := anypb.UnmarshalTo(c.Options, opt, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
+	}
+
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),

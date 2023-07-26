@@ -32,9 +32,7 @@ func New(opts ...loader.Option) loader.Loader {
 func (loader *Tracing) Init(...loader.Option) (err error) {
 	var cfg = config.ApplicationConfig().GetTracing()
 	if cfg == nil {
-		cfg = &v1.Tracing{
-			Disable: true,
-		}
+		cfg = &v1.Tracing{}
 	}
 	if cfg.Disable {
 		return nil

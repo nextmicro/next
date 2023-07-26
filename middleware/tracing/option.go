@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	v1 "github.com/nextmicro/next/api/middleware/tracing/v1"
 	"go.opentelemetry.io/otel/propagation"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
@@ -17,6 +18,7 @@ func (o optionFunc) apply(c *options) {
 }
 
 type options struct {
+	*v1.Tracing
 	disabled       bool
 	tracerProvider oteltrace.TracerProvider
 	propagators    propagation.TextMapPropagator

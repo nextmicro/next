@@ -3,13 +3,13 @@ package tracing
 import (
 	"context"
 	"net"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/transport"
+	thttp "github.com/nextmicro/next/transport/http"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/semconv/v1.20.0/httpconv"
@@ -29,9 +29,10 @@ func setClientSpan(ctx context.Context, span trace.Span, request any) {
 		rpcKind = tr.Kind().String()
 		switch tr.Kind() {
 		case transport.KindHTTP:
-			req := request.(*http.Request)
-			attrs = httpconv.ClientRequest(req)
-			remote = req.Host
+			if ht, ok := tr.(thttp.Transporter); ok {
+				attrs = httpconv.ClientRequest(ht.Request())
+				remote = ht.Request().Host
+			}
 		case transport.KindGRPC:
 			remote, _ = parseTarget(tr.Endpoint())
 		}
@@ -70,9 +71,10 @@ func setServerSpan(ctx context.Context, span trace.Span, request any) {
 		rpcKind = tr.Kind().String()
 		switch tr.Kind() {
 		case transport.KindHTTP:
-			req := request.(*http.Request)
-			attrs = append(attrs, httpconv.ServerRequest("", req)...)
-			remote = req.RemoteAddr
+			if ht, ok := tr.(thttp.Transporter); ok {
+				attrs = append(attrs, httpconv.ServerRequest("", ht.Request())...)
+				remote = ht.Request().RemoteAddr
+			}
 		case transport.KindGRPC:
 			if p, ok := peer.FromContext(ctx); ok {
 				remote = p.Addr.String()
