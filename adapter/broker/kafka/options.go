@@ -2,8 +2,9 @@ package kafka
 
 import (
 	"context"
+
+	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/nextmicro/next/broker"
-	"github.com/nextmicro/next/internal/adapter/broker/middleware"
 
 	"github.com/Shopify/sarama"
 )

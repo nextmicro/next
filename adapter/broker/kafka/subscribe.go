@@ -3,10 +3,11 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/go-volo/logger"
-	"github.com/nextmicro/next/broker"
-	"github.com/nextmicro/next/internal/adapter/broker/middleware"
 	"strings"
+
+	"github.com/go-volo/logger"
+	"github.com/nextmicro/next/adapter/broker/middleware"
+	"github.com/nextmicro/next/broker"
 
 	"github.com/Shopify/sarama"
 	tracex "github.com/nextmicro/gokit/trace"

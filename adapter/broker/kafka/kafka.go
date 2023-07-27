@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nextmicro/next/internal/adapter/broker/middleware"
 	"io"
 	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/nextmicro/next/adapter/broker/middleware"
+
 	"github.com/go-volo/logger"
-	adapter "github.com/nextmicro/next/internal/adapter/logger/log"
+	adapter "github.com/nextmicro/next/adapter/logger/log"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 

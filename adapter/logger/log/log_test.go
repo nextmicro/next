@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-volo/logger"
-	"github.com/nextmicro/next/internal/adapter/logger/log"
+	"github.com/nextmicro/next/adapter/logger/log"
 )
 
 func TestMain(t *testing.M) {

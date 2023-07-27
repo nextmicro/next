@@ -2,11 +2,12 @@ package metrics
 
 import (
 	"context"
+	"time"
+
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"
-	"github.com/nextmicro/next/internal/adapter/broker/middleware"
+	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/codes"
-	"time"
 )
 
 var (

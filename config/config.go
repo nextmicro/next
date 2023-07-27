@@ -13,8 +13,8 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nextmicro/next/adapter/config/nacos"
 	"github.com/nextmicro/next/api/config/v1"
-	"github.com/nextmicro/next/internal/adapter/config/nacos"
 	util "github.com/nextmicro/next/internal/pkg/file"
 	kUtil "github.com/nextmicro/next/pkg/env"
 )

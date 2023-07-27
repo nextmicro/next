@@ -21,6 +21,8 @@ message Next {
   Registry            registry = 5;
   // server config
   Server  server = 6;
+  // client config
+  Client  client = 7;
   // logger config
   Logger  logger = 10;
   // tracing config
