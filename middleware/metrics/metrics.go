@@ -60,15 +60,14 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			)
 
 			startTime := time.Now()
-			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
-				callee = peer.Node.ServiceName()
-			}
-
 			if info, ok := transport.FromClientContext(ctx); ok {
 				kind = info.Kind().String()
 				method = info.Operation()
 			}
 			reply, err := handler(ctx, req)
+			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
+				callee = peer.Node.ServiceName()
+			}
 			status = metric.FromErrorCode(err).String()
 			if options.requests != nil {
 				options.requests.With(kind, callee, method, status).Inc()

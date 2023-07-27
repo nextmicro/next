@@ -80,11 +80,6 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 				nodeAddress = ""
 			)
 
-			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
-				callee = peer.Node.ServiceName()
-				nodeAddress = peer.Node.Address()
-			}
-
 			if info, ok := transport.FromClientContext(ctx); ok {
 				kind = info.Kind().String()
 				method = info.Operation()
@@ -92,6 +87,12 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
+
+			if peer, ok := selector.FromPeerContext(ctx); ok && peer.Node != nil {
+				callee = peer.Node.ServiceName()
+				nodeAddress = peer.Node.Address()
+			}
+
 			fields := map[string]interface{}{
 				"start":     startTime.Format(options.TimeFormat),
 				"kind":      "client",
