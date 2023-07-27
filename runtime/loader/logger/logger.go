@@ -8,10 +8,10 @@ import (
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	log "github.com/go-volo/logger"
+	"github.com/nextmicro/next/adapter/logger/kratos"
+	"github.com/nextmicro/next/adapter/logger/nacos"
 	config "github.com/nextmicro/next/api/config/v1"
 	conf "github.com/nextmicro/next/config"
-	"github.com/nextmicro/next/internal/adapter/logger/kratos"
-	"github.com/nextmicro/next/internal/adapter/logger/nacos"
 	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
 )

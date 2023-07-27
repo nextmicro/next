@@ -2,10 +2,11 @@ package logging
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-volo/logger"
 	"github.com/nextmicro/gokit/timex"
-	"github.com/nextmicro/next/internal/adapter/broker/middleware"
-	"time"
+	"github.com/nextmicro/next/adapter/broker/middleware"
 )
 
 func Client(opts ...Option) middleware.Middleware {

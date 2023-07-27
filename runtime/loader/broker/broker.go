@@ -2,11 +2,12 @@ package broker
 
 import (
 	"context"
+
 	"github.com/go-volo/logger"
+	"github.com/nextmicro/next/adapter/broker/kafka"
 	config "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/broker"
 	conf "github.com/nextmicro/next/config"
-	"github.com/nextmicro/next/internal/adapter/broker/kafka"
 	"github.com/nextmicro/next/runtime/loader"
 )
 
