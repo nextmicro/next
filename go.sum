@@ -346,8 +346,6 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/nacos-group/nacos-sdk-go/v2 v2.2.2 h1:FI+7vr1fvCA4jbgx36KezmP3zlU/WoP/7wAloaSd1Ew=
 github.com/nacos-group/nacos-sdk-go/v2 v2.2.2/go.mod h1:ys/1adWeKXXzbNWfRNbaFlX/t6HVLWdpsNDvmoWTw0g=
-github.com/nextmicro/gokit v0.0.0-20230618105139-35a62aef9afc h1:3jvSkqrqoCy9Dw2DNGLBTh3MYEqdoyFQCgq1sDHzKYM=
-github.com/nextmicro/gokit v0.0.0-20230618105139-35a62aef9afc/go.mod h1:aIf59iUuUD1PDecSAGEI//IRKdXJ2kQYrt5BO/Z5Dvs=
 github.com/nextmicro/gokit/timex v0.0.0-20230618105139-35a62aef9afc h1:fdKfw37EPUWPKG/UrwzC8mM5f59gKbvW/13LmkLOB6E=
 github.com/nextmicro/gokit/timex v0.0.0-20230618105139-35a62aef9afc/go.mod h1:jshoenDm1zVjTKvkGnZpJ8Ww6b8qiQ1Bmj+Q4EnpMBA=
 github.com/nextmicro/gokit/trace v0.0.0-20230618105139-35a62aef9afc h1:dRPr6xdfLWt51f9WW54riDXSJpkGcpb7Q9qWNBi6CHE=
