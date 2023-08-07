@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	v1 "github.com/nextmicro/next/api/config/v1"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	v1 "github.com/nextmicro/next/api/config/v1"
 
 	kratoserrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"

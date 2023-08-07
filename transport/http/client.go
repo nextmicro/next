@@ -14,6 +14,7 @@ import (
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/httputil"
 	middleware2 "github.com/nextmicro/next/middleware"
+	discov "github.com/nextmicro/next/registry"
 
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -166,12 +167,17 @@ type Client struct {
 func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*Client, error) {
 	options := clientOptions{
 		ctx:          ctx,
+		endpoint:     cfg.GetEndpoint(),
+		discovery:    discov.DefaultRegistry,
 		timeout:      2000 * time.Millisecond,
 		encoder:      DefaultRequestEncoder,
 		decoder:      DefaultResponseDecoder,
 		errorDecoder: DefaultErrorDecoder,
 		transport:    http.DefaultTransport,
 		subsetSize:   25,
+	}
+	if cfg.GetTimeout().AsDuration() > 0 {
+		options.timeout = cfg.GetTimeout().AsDuration()
 	}
 	for _, o := range opts {
 		o(&options)

@@ -63,12 +63,14 @@ message HTTPServer {
 
 // http client config
 message HTTPClient {
+  string endpoint = 1; // http client endpoint
   google.protobuf.Duration timeout = 3;
   repeated Middleware middlewares = 4;
 }
 
 // grpc client config
 message GRPCClient {
+  string endpoint = 1; // http client endpoint
   google.protobuf.Duration timeout = 3;
   repeated Middleware middlewares = 4;
 }

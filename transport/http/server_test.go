@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	v1 "github.com/nextmicro/next/api/config/v1"
-	"github.com/nextmicro/next/internal/host"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	v1 "github.com/nextmicro/next/api/config/v1"
+	"github.com/nextmicro/next/internal/host"
 
 	kratoserrors "github.com/go-kratos/kratos/v2/errors"
 )
@@ -75,6 +76,21 @@ func TestServeHTTP(t *testing.T) {
 	time.Sleep(time.Second)
 	if err := srv.Shutdown(context.Background()); err != nil {
 		t.Log(err)
+	}
+}
+
+func TestServer_WalkHandle(t *testing.T) {
+	mux := NewServer()
+	mux.HandleFunc("/index", h)
+	mux.Route("/errors").GET("/cause", func(ctx Context) error {
+		return kratoserrors.BadRequest("xxx", "zzz").
+			WithMetadata(map[string]string{"foo": "bar"}).
+			WithCause(errors.New("error cause"))
+	})
+	if err := mux.WalkHandle(func(method, path string, handler http.HandlerFunc) {
+		t.Logf("WalkHandle: %s %s", method, path)
+	}); err != nil {
+		t.Fatal(err)
 	}
 }
 
