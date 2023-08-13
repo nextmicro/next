@@ -21,8 +21,6 @@ message Next {
   Registry            registry = 5;
   // server config
   Server  server = 6;
-  // client config
-  Client  client = 7;
   // logger config
   Logger  logger = 10;
   // tracing config
@@ -37,12 +35,6 @@ message Next {
 message Server {
   HTTPServer http = 1;
   GRPCServer grpc = 2;
-}
-
-// client config
-message Client {
-  HTTPClient http = 1;
-  GRPCClient grpc = 2;
 }
 
 // grpc server config
