@@ -108,5 +108,18 @@ func buildOptions(cfg *v1.Next, opts ...Option) Options {
 		}
 	}
 
+	if cfg.GetId() == "" && opt.ID != "" {
+		cfg.Id = opt.ID
+	}
+	if cfg.GetName() == "" && opt.Name != "" {
+		cfg.Name = opt.Name
+	}
+	if cfg.GetVersion() == "" && opt.Version != "" {
+		cfg.Version = opt.Version
+	}
+	if cfg.GetMetadata() == nil && opt.Metadata != nil {
+		cfg.Metadata = opt.Metadata
+	}
+
 	return opt
 }
