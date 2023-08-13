@@ -30,6 +30,14 @@ func TestParseTarget(t *testing.T) {
 		t.Errorf("expect %v, got %v", &Target{Scheme: "discovery", Authority: "", Endpoint: "demo"}, target)
 	}
 
+	target, err = parseTarget("direct:///localhost:123", true)
+	if err != nil {
+		t.Errorf("expect %v, got %v", nil, err)
+	}
+	if !reflect.DeepEqual(&Target{Scheme: "direct", Authority: "", Endpoint: "localhost:123"}, target) {
+		t.Errorf("expect %v, got %v", &Target{Scheme: "direct", Authority: "", Endpoint: "localhost:123"}, target)
+	}
+
 	target, err = parseTarget("127.0.0.1:8000", true)
 	if err != nil {
 		t.Errorf("expect %v, got %v", nil, err)

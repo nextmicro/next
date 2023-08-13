@@ -3,10 +3,11 @@ package http
 import (
 	"context"
 	"errors"
-	"github.com/nextmicro/next/internal/endpoint"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/nextmicro/next/internal/endpoint"
 
 	"github.com/google/uuid"
 

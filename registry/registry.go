@@ -2,13 +2,14 @@ package registry
 
 import (
 	"errors"
+
 	"github.com/go-kratos/kratos/v2/registry"
 )
 
 var (
 	DefaultRegistry = NewRegistry()
 
-	// Watcher stopped error when watcher is stopped.
+	// ErrWatcherStopped error when watcher is stopped.
 	ErrWatcherStopped = errors.New("watcher stopped")
 )
 

@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/go-kratos/aegis v0.2.0
-	github.com/go-kratos/kratos/v2 v2.6.4-0.20230728114959-072b2ee7693c
+	github.com/go-kratos/kratos/v2 v2.7.0
 	github.com/go-volo/logger v1.0.5
 	github.com/nextmicro/gokit/timex v0.0.0-20230618105139-35a62aef9afc
 	github.com/nextmicro/gokit/trace v0.0.0-20230618105139-35a62aef9afc

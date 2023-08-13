@@ -4,14 +4,16 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/nextmicro/next/internal/matcher"
-	pb "github.com/nextmicro/next/internal/testdata/helloworld"
 	"net"
 	"net/url"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	v1 "github.com/nextmicro/next/api/config/v1"
+	"github.com/nextmicro/next/internal/matcher"
+	pb "github.com/nextmicro/next/internal/testdata/helloworld"
 
 	"google.golang.org/grpc"
 
@@ -112,6 +114,7 @@ func testClient(t *testing.T, srv *Server) {
 	}
 	// new a gRPC client
 	conn, err := DialInsecure(context.Background(),
+		&v1.GRPCClient{},
 		WithEndpoint(u.Host),
 		WithOptions(grpc.WithBlock()),
 		WithUnaryInterceptor(

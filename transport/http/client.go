@@ -13,7 +13,7 @@ import (
 	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/httputil"
-	middleware2 "github.com/nextmicro/next/middleware"
+	chain "github.com/nextmicro/next/middleware"
 	discov "github.com/nextmicro/next/registry"
 
 	"github.com/go-kratos/kratos/v2/encoding"
@@ -176,9 +176,14 @@ func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*
 		transport:    http.DefaultTransport,
 		subsetSize:   25,
 	}
+
 	if cfg.GetTimeout().AsDuration() > 0 {
 		options.timeout = cfg.GetTimeout().AsDuration()
 	}
+	if cfg.GetEndpoint() != "" {
+		options.endpoint = cfg.GetEndpoint()
+	}
+
 	for _, o := range opts {
 		o(&options)
 	}
@@ -199,7 +204,7 @@ func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*
 			if r, err = newResolver(ctx, options.discovery, target, selector, options.block, insecure, options.subsetSize); err != nil {
 				return nil, fmt.Errorf("[http client] new resolver failed!err: %v", options.endpoint)
 			}
-		} else if _, _, err := host.ExtractHostPort(options.endpoint); err != nil {
+		} else if _, _, err = host.ExtractHostPort(options.endpoint); err != nil {
 			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
 		}
 	}
@@ -227,7 +232,7 @@ func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*
 func buildMiddlewareDialOptions(cfg *v1.HTTPClient) []middleware.Middleware {
 	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
 	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware2.BuildMiddleware("client", cfg.GetMiddlewares())
+		serverMs, _ := chain.BuildMiddleware("client", cfg.GetMiddlewares())
 		ms = append(ms, serverMs...)
 	}
 

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2"
+	v1 "github.com/nextmicro/next/api/config/v1"
+	chain "github.com/nextmicro/next/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
@@ -18,10 +20,10 @@ import (
 	"github.com/go-kratos/kratos/v2/selector"
 	"github.com/go-kratos/kratos/v2/selector/wrr"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-kratos/kratos/v2/transport/grpc/resolver/discovery"
+	"github.com/nextmicro/next/transport/grpc/resolver/discovery"
 
 	// init resolver
-	_ "github.com/go-kratos/kratos/v2/transport/grpc/resolver/direct"
+	_ "github.com/nextmicro/next/transport/grpc/resolver/direct"
 )
 
 func init() {
@@ -133,25 +135,41 @@ type clientOptions struct {
 }
 
 // Dial returns a GRPC connection.
-func Dial(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
-	return dial(ctx, false, opts...)
+func Dial(ctx context.Context, cfg *v1.GRPCClient, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, cfg, false, opts...)
 }
 
 // DialInsecure returns an insecure GRPC connection.
-func DialInsecure(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
-	return dial(ctx, true, opts...)
+func DialInsecure(ctx context.Context, cfg *v1.GRPCClient, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, cfg, true, opts...)
 }
 
-func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
+func dial(ctx context.Context, cfg *v1.GRPCClient, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
 	options := clientOptions{
 		timeout:                2000 * time.Millisecond,
 		balancerName:           balancerName,
 		subsetSize:             25,
 		printDiscoveryDebugLog: true,
 	}
+
+	if cfg.GetTimeout().AsDuration() > 0 {
+		options.timeout = cfg.GetTimeout().AsDuration()
+	}
+	if cfg.GetEndpoint() != "" {
+		options.endpoint = cfg.GetEndpoint()
+	}
+
 	for _, o := range opts {
 		o(&options)
 	}
+
+	serverMs := buildMiddlewareDialOptions(cfg)
+	// server middleware first
+	if len(serverMs) > 0 {
+		userMs := options.middleware
+		options.middleware = append(serverMs, userMs...)
+	}
+
 	ints := []grpc.UnaryClientInterceptor{
 		unaryClientInterceptor(options.middleware, options.timeout, options.filters),
 	}
@@ -191,6 +209,17 @@ func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.Clien
 		grpcOpts = append(grpcOpts, options.grpcOpts...)
 	}
 	return grpc.DialContext(ctx, options.endpoint, grpcOpts...)
+}
+
+// buildMiddlewareDialOptions build dial options.
+func buildMiddlewareDialOptions(cfg *v1.GRPCClient) []middleware.Middleware {
+	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
+	if cfg != nil && cfg.GetMiddlewares() != nil {
+		serverMs, _ := chain.BuildMiddleware("client", cfg.GetMiddlewares())
+		ms = append(ms, serverMs...)
+	}
+
+	return ms
 }
 
 func unaryClientInterceptor(ms []middleware.Middleware, timeout time.Duration, filters []selector.NodeFilter) grpc.UnaryClientInterceptor {
