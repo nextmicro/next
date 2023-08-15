@@ -155,7 +155,7 @@ func dial(ctx context.Context, cfg *anypb.Any, insecure bool, opts ...ClientOpti
 	}
 
 	grpcClient := &v1.GRPCClient{}
-	if cfg != nil {
+	if cfg != nil && cfg.Value != nil {
 		if err := anypb.UnmarshalTo(cfg, grpcClient, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}

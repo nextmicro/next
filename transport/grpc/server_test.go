@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/internal/matcher"
 	pb "github.com/nextmicro/next/internal/testdata/helloworld"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"google.golang.org/grpc"
 
@@ -114,7 +114,7 @@ func testClient(t *testing.T, srv *Server) {
 	}
 	// new a gRPC client
 	conn, err := DialInsecure(context.Background(),
-		&v1.GRPCClient{},
+		&anypb.Any{},
 		WithEndpoint(u.Host),
 		WithOptions(grpc.WithBlock()),
 		WithUnaryInterceptor(

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/nextmicro/next/api/config/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	kratoserrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -308,34 +308,34 @@ func TestCodecForResponse(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint("127.0.0.1:8888"))
+	_, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:8888"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint("127.0.0.1:9999"), WithTLSConfig(&tls.Config{ServerName: "www.kratos.com", RootCAs: nil}))
+	_, err = NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:9999"), WithTLSConfig(&tls.Config{ServerName: "www.kratos.com", RootCAs: nil}))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &v1.HTTPClient{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("discovery:///go-kratos"))
+	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("discovery:///go-kratos"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &v1.HTTPClient{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("127.0.0.1:8888"))
+	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("127.0.0.1:8888"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint("127.0.0.1:8888:xxxxa"))
+	_, err = NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:8888:xxxxa"))
 	if err == nil {
 		t.Error("except a parseTarget error")
 	}
-	_, err = NewClient(context.Background(), &v1.HTTPClient{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("https://go-kratos.dev/"))
+	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("https://go-kratos.dev/"))
 	if err == nil {
 		t.Error("err should not be equal to nil")
 	}
 
 	client, err := NewClient(
 		context.Background(),
-		&v1.HTTPClient{},
+		&anypb.Any{},
 		WithDiscovery(&mockDiscovery{}),
 		WithEndpoint("discovery:///go-kratos"),
 		WithMiddleware(func(handler middleware.Handler) middleware.Handler {

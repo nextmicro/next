@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/nextmicro/next/api/config/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/registry"
@@ -134,7 +134,7 @@ func TestDial(t *testing.T) {
 func TestDialConn(t *testing.T) {
 	_, err := dial(
 		context.Background(),
-		&v1.GRPCClient{},
+		&anypb.Any{},
 		true,
 		WithDiscovery(&mockRegistry{}),
 		WithTimeout(10*time.Second),

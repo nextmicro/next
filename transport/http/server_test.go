@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/internal/host"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	kratoserrors "github.com/go-kratos/kratos/v2/errors"
 )
@@ -141,7 +141,7 @@ func testAccept(t *testing.T, srv *Server) {
 	if err != nil {
 		t.Errorf("expected nil got %v", err)
 	}
-	client, err := NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint(e.Host))
+	client, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint(e.Host))
 	if err != nil {
 		t.Errorf("expected nil got %v", err)
 	}
@@ -166,7 +166,7 @@ func testHeader(t *testing.T, srv *Server) {
 	if err != nil {
 		t.Errorf("expected nil got %v", err)
 	}
-	client, err := NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint(e.Host))
+	client, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint(e.Host))
 	if err != nil {
 		t.Errorf("expected nil got %v", err)
 	}
@@ -209,7 +209,7 @@ func testClient(t *testing.T, srv *Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint(e.Host))
+	client, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint(e.Host))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,7 +282,7 @@ func BenchmarkServer(b *testing.B) {
 	if !ok {
 		b.Errorf("expected port got %v", srv.lis)
 	}
-	client, err := NewClient(context.Background(), &v1.HTTPClient{}, WithEndpoint(fmt.Sprintf("127.0.0.1:%d", port)))
+	client, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint(fmt.Sprintf("127.0.0.1:%d", port)))
 	if err != nil {
 		b.Errorf("expected nil got %v", err)
 	}

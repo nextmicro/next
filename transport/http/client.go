@@ -179,7 +179,7 @@ func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Clie
 	}
 
 	httpClient := &v1.HTTPClient{}
-	if cfg != nil {
+	if cfg != nil && cfg.Value != nil {
 		if err := anypb.UnmarshalTo(cfg, httpClient, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
