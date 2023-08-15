@@ -15,6 +15,8 @@ import (
 	"github.com/nextmicro/next/internal/httputil"
 	chain "github.com/nextmicro/next/middleware"
 	discov "github.com/nextmicro/next/registry"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/errors"
@@ -164,10 +166,9 @@ type Client struct {
 }
 
 // NewClient returns an HTTP client.
-func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Client, error) {
 	options := clientOptions{
 		ctx:          ctx,
-		endpoint:     cfg.GetEndpoint(),
 		discovery:    discov.DefaultRegistry,
 		timeout:      2000 * time.Millisecond,
 		encoder:      DefaultRequestEncoder,
@@ -177,11 +178,17 @@ func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*
 		subsetSize:   25,
 	}
 
-	if cfg.GetTimeout().AsDuration() > 0 {
-		options.timeout = cfg.GetTimeout().AsDuration()
+	httpClient := &v1.HTTPClient{}
+	if cfg != nil {
+		if err := anypb.UnmarshalTo(cfg, httpClient, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
-	if cfg.GetEndpoint() != "" {
-		options.endpoint = cfg.GetEndpoint()
+	if httpClient.GetTimeout().AsDuration() > 0 {
+		options.timeout = httpClient.GetTimeout().AsDuration()
+	}
+	if httpClient.GetEndpoint() != "" {
+		options.endpoint = httpClient.GetEndpoint()
 	}
 
 	for _, o := range opts {
@@ -208,7 +215,7 @@ func NewClient(ctx context.Context, cfg *v1.HTTPClient, opts ...ClientOption) (*
 			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
 		}
 	}
-	serverMs := buildMiddlewareDialOptions(cfg)
+	serverMs := buildMiddlewareDialOptions(httpClient)
 	// server middleware first
 	if len(serverMs) > 0 {
 		userMs := options.middleware

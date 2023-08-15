@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 	grpcmd "google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -135,16 +137,16 @@ type clientOptions struct {
 }
 
 // Dial returns a GRPC connection.
-func Dial(ctx context.Context, cfg *v1.GRPCClient, opts ...ClientOption) (*grpc.ClientConn, error) {
+func Dial(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*grpc.ClientConn, error) {
 	return dial(ctx, cfg, false, opts...)
 }
 
 // DialInsecure returns an insecure GRPC connection.
-func DialInsecure(ctx context.Context, cfg *v1.GRPCClient, opts ...ClientOption) (*grpc.ClientConn, error) {
+func DialInsecure(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*grpc.ClientConn, error) {
 	return dial(ctx, cfg, true, opts...)
 }
 
-func dial(ctx context.Context, cfg *v1.GRPCClient, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
+func dial(ctx context.Context, cfg *anypb.Any, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
 	options := clientOptions{
 		timeout:                2000 * time.Millisecond,
 		balancerName:           balancerName,
@@ -152,18 +154,24 @@ func dial(ctx context.Context, cfg *v1.GRPCClient, insecure bool, opts ...Client
 		printDiscoveryDebugLog: true,
 	}
 
-	if cfg.GetTimeout().AsDuration() > 0 {
-		options.timeout = cfg.GetTimeout().AsDuration()
+	grpcClient := &v1.GRPCClient{}
+	if cfg != nil {
+		if err := anypb.UnmarshalTo(cfg, grpcClient, proto.UnmarshalOptions{Merge: true}); err != nil {
+			return nil, err
+		}
 	}
-	if cfg.GetEndpoint() != "" {
-		options.endpoint = cfg.GetEndpoint()
+	if grpcClient.GetTimeout().AsDuration() > 0 {
+		options.timeout = grpcClient.GetTimeout().AsDuration()
+	}
+	if grpcClient.GetEndpoint() != "" {
+		options.endpoint = grpcClient.GetEndpoint()
 	}
 
 	for _, o := range opts {
 		o(&options)
 	}
 
-	serverMs := buildMiddlewareDialOptions(cfg)
+	serverMs := buildMiddlewareDialOptions(grpcClient)
 	// server middleware first
 	if len(serverMs) > 0 {
 		userMs := options.middleware

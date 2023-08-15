@@ -37,12 +37,6 @@ message Server {
   GRPCServer grpc = 2;
 }
 
-// client config
-message Client {
-  HTTPClient http = 1;
-  GRPCClient grpc = 2;
-}
-
 // grpc server config
 message GRPCServer {
   string network = 1;
