@@ -112,7 +112,6 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 				fields["code"] = se.Code
 				fields["reason"] = se.Reason
 			}
-
 			log := logger.WithContext(ctx).WithFields(fields)
 
 			// show log

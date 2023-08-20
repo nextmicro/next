@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nextmicro/next/internal/host"
 	"log"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/nextmicro/next/internal/host"
 )
 
 const appJSONStr = "application/json"
