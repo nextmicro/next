@@ -11,8 +11,8 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	thttp "github.com/nextmicro/next/transport/http"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
-	"go.opentelemetry.io/otel/semconv/v1.20.0/httpconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
+	"go.opentelemetry.io/otel/semconv/v1.16.0/httpconv"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/proto"
@@ -106,13 +106,13 @@ func peerAttr(addr string) []attribute.KeyValue {
 	var attr []attribute.KeyValue
 	if ip := net.ParseIP(host); ip != nil {
 		attr = []attribute.KeyValue{
-			semconv.NetSockPeerAddr(host),
-			semconv.NetSockPeerPort(port),
+			semconv.NetSockPeerAddrKey.String(host),
+			semconv.NetSockPeerPortKey.Int(port),
 		}
 	} else {
 		attr = []attribute.KeyValue{
-			semconv.NetPeerName(host),
-			semconv.NetPeerPort(port),
+			semconv.NetPeerNameKey.String(host),
+			semconv.NetPeerPortKey.Int(port),
 		}
 	}
 

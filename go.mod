@@ -5,11 +5,11 @@ go 1.21.0
 require (
 	github.com/go-kratos/aegis v0.2.0
 	github.com/go-kratos/kratos/v2 v2.7.1-0.20230830131453-6c026bce56a9
-	github.com/nextmicro/gokit/timex v0.0.0-20230618105139-35a62aef9afc
-	github.com/nextmicro/gokit/trace v0.0.0-20230618105139-35a62aef9afc
+	github.com/nextmicro/gokit/timex v1.0.0
+	github.com/nextmicro/gokit/trace v1.0.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/otel v1.17.0
-	google.golang.org/grpc v1.57.0
+	go.opentelemetry.io/otel v1.16.0
+	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -18,17 +18,16 @@ require (
 	github.com/go-kratos/kratos/contrib/metrics/prometheus/v2 v2.0.0-20230728114959-072b2ee7693c
 	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20230728114959-072b2ee7693c
 	github.com/go-kratos/kratos/contrib/registry/etcd/v2 v2.0.0-20230728114959-072b2ee7693c
-	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/consul/api v1.23.0
 	github.com/miekg/dns v1.1.55
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.2
-	github.com/nextmicro/logger v0.0.0-20231008152718-873f594b8b1a
+	github.com/nextmicro/logger v1.0.0
 	github.com/prometheus/client_golang v1.16.0
 	go.etcd.io/etcd/client/v3 v3.5.9
 	go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama v0.42.0
-	go.opentelemetry.io/otel/trace v1.17.0
+	go.opentelemetry.io/otel/trace v1.16.0
 	golang.org/x/net v0.12.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
@@ -45,7 +44,6 @@ require (
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -54,6 +52,7 @@ require (
 	github.com/go-playground/form/v4 v4.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -98,19 +97,19 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.9 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
-	go.opentelemetry.io/otel/exporters/jaeger v1.17.0 // indirect
-	go.opentelemetry.io/otel/exporters/zipkin v1.17.0 // indirect
-	go.opentelemetry.io/otel/metric v1.17.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.17.0 // indirect
+	go.opentelemetry.io/otel/exporters/jaeger v1.16.0 // indirect
+	go.opentelemetry.io/otel/exporters/zipkin v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.25.0 // indirect
+	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230728194245-b0cb94b80691 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.11.0 // indirect
