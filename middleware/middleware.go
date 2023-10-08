@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-kratos/kratos/v2/middleware"
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 	configv1 "github.com/nextmicro/next/api/config/v1"
 )
 

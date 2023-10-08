@@ -4,7 +4,7 @@ import (
 	"bytes"
 	std "log"
 
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 )
 
 type logWriter struct {

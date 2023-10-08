@@ -1,9 +1,10 @@
 package metrics
 
 import (
+	"net/http"
+
 	"github.com/go-kratos/kratos/v2/errors"
 	"go.opentelemetry.io/otel/codes"
-	"net/http"
 )
 
 type Converter interface {

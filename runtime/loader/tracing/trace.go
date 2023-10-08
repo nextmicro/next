@@ -3,8 +3,8 @@ package tracing
 import (
 	"context"
 
-	"github.com/go-volo/logger"
 	tr "github.com/nextmicro/gokit/trace"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/runtime/loader"

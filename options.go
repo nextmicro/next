@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/runtime/loader"
 )
 

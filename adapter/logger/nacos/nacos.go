@@ -1,8 +1,8 @@
 package nacos
 
 import (
-	log "github.com/go-volo/logger"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
+	log "github.com/nextmicro/logger"
 )
 
 type nacos struct {

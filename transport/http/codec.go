@@ -3,12 +3,13 @@ package http
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-volo/logger"
-	"github.com/nextmicro/gokit/trace"
-	"github.com/nextmicro/next/internal/httputil"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/nextmicro/gokit/trace"
+	"github.com/nextmicro/logger"
+	"github.com/nextmicro/next/internal/httputil"
 
 	"github.com/gorilla/mux"
 

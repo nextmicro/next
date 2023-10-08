@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/recovery"
 	chain "github.com/nextmicro/next/middleware"

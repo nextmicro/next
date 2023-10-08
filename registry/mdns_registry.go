@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/registry"
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 	"github.com/nextmicro/next/pkg/mdns"
 )
 

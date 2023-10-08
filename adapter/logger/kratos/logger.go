@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 )
 
 const defaultCallerSkipCount = 2

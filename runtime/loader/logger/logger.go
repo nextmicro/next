@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	kconfig "github.com/go-kratos/kratos/v2/config"
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/logger/kratos"
 	"github.com/nextmicro/next/adapter/logger/nacos"
 	config "github.com/nextmicro/next/api/config/v1"

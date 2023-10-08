@@ -6,7 +6,6 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-volo/logger"
 	configv1 "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/tracing/v1"
 	chain "github.com/nextmicro/next/middleware"
@@ -28,26 +27,6 @@ const (
 func init() {
 	chain.Register("client.tracing", Client)
 	chain.Register("server.tracing", Server)
-}
-
-// TraceID returns a traceid valuer.
-func TraceID() logger.Valuer {
-	return func(ctx context.Context) interface{} {
-		if span := trace.SpanContextFromContext(ctx); span.HasTraceID() {
-			return span.TraceID().String()
-		}
-		return ""
-	}
-}
-
-// SpanID returns a spanid valuer.
-func SpanID() logger.Valuer {
-	return func(ctx context.Context) interface{} {
-		if span := trace.SpanContextFromContext(ctx); span.HasSpanID() {
-			return span.SpanID().String()
-		}
-		return ""
-	}
 }
 
 // Client returns a new client middleware for OpenTelemetry.

@@ -2,17 +2,18 @@ package registry
 
 import (
 	"context"
+	"net"
+	"strings"
+
 	"github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	etcd "github.com/go-kratos/kratos/contrib/registry/etcd/v2"
-	"github.com/go-volo/logger"
 	"github.com/hashicorp/consul/api"
+	"github.com/nextmicro/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/registry"
 	"github.com/nextmicro/next/runtime/loader"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"net"
-	"strings"
 )
 
 type wrapper struct {

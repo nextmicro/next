@@ -2,12 +2,13 @@ package mdns
 
 import (
 	"fmt"
-	"github.com/go-volo/logger"
 	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/nextmicro/logger"
 
 	"github.com/miekg/dns"
 	"golang.org/x/net/ipv4"

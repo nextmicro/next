@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-kratos/aegis/circuitbreaker"
 	"github.com/go-kratos/aegis/circuitbreaker/sre"
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/circuitbreaker/v1"
 	chain "github.com/nextmicro/next/middleware"

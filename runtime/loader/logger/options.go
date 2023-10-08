@@ -3,7 +3,7 @@ package logger
 import (
 	"context"
 
-	log "github.com/go-volo/logger"
+	log "github.com/nextmicro/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/runtime/loader"
 )

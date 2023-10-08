@@ -11,7 +11,7 @@ import (
 
 	"github.com/nextmicro/next/adapter/broker/middleware"
 
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 	adapter "github.com/nextmicro/next/adapter/logger/log"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

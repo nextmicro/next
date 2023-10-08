@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-kratos/kratos/v2/log"
-	vlog "github.com/go-volo/logger"
+	vlog "github.com/nextmicro/logger"
 )
 
 func TestMain(t *testing.M) {

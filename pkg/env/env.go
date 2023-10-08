@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 )
 
 // firstInt returns the value of the first matching environment variable from

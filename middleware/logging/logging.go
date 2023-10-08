@@ -10,14 +10,14 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/selector"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-volo/logger"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/nextmicro/gokit/timex"
+	"github.com/nextmicro/logger"
 	config "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/logging/v1"
 	chain "github.com/nextmicro/next/middleware"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
@@ -58,7 +58,7 @@ func extractArgs(req interface{}) string {
 
 // Client is an client logging middleware.
 func Client(c *config.Middleware) (middleware.Middleware, error) {
-	v := ptypes.DurationProto(time.Millisecond * 300)
+	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
 		TimeFormat:    defaultFormat,
 		SlowThreshold: v,
@@ -74,7 +74,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
 				kind        string
-				method      string
+				route       string
 				callee      = "unknown"
 				startTime   = time.Now()
 				nodeAddress = ""
@@ -82,7 +82,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 
 			if info, ok := transport.FromClientContext(ctx); ok {
 				kind = info.Kind().String()
-				method = info.Operation()
+				route = info.Operation()
 			}
 
 			resp, err := handler(ctx, req)
@@ -97,7 +97,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 				"start":     startTime.Format(options.TimeFormat),
 				"kind":      "client",
 				"component": kind,
-				"method":    method,
+				"route":     route,
 				"duration":  timex.Duration(duration),
 				"callee":    callee,
 			}
@@ -131,7 +131,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 
 // Server is an client logging middleware.
 func Server(c *config.Middleware) (middleware.Middleware, error) {
-	v := ptypes.DurationProto(time.Millisecond * 300)
+	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
 		TimeFormat:    defaultFormat,
 		SlowThreshold: v,
@@ -147,14 +147,14 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
 				kind      string
-				method    string
+				route     string
 				caller    = "unknown"
 				startTime = time.Now()
 			)
 
 			if info, ok := transport.FromServerContext(ctx); ok {
 				kind = info.Kind().String()
-				method = info.Operation()
+				route = info.Operation()
 			}
 			if md, ok := metadata.FromServerContext(ctx); ok {
 				if v := md.Get("x-md-local-caller"); v != "" {
@@ -168,7 +168,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 				"start":     startTime.Format(options.GetTimeFormat()),
 				"kind":      "server",
 				"component": kind,
-				"method":    method,
+				"route":     route,
 				"duration":  timex.Duration(duration),
 				"caller":    caller,
 			}

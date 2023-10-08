@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-volo/logger"
 	"github.com/nextmicro/gokit/timex"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/broker/middleware"
 )
 

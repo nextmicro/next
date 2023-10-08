@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/nextmicro/next/broker"
 

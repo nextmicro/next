@@ -4,7 +4,7 @@ import (
 	std "log"
 	"testing"
 
-	"github.com/go-volo/logger"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/logger/log"
 )
 
