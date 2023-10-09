@@ -28,18 +28,22 @@ func TestServer_Lookup(t *testing.T) {
 		select {
 		case e := <-entries:
 			if e.Name != "hostname._foobar._tcp.local." {
-				t.Fatalf("bad: %v", e)
+				t.Errorf("bad: %v", e)
+				return
 			}
 			if e.Port != 80 {
-				t.Fatalf("bad: %v", e)
+				t.Errorf("bad: %v", e)
+				return
 			}
 			if e.Info != "Local web server" {
-				t.Fatalf("bad: %v", e)
+				t.Errorf("bad: %v", e)
+				return
 			}
 			found = true
 
 		case <-time.After(80 * time.Millisecond):
-			t.Fatalf("timeout")
+			t.Errorf("timeout")
+			return
 		}
 		close(doneCh)
 	}()
