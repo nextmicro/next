@@ -9,7 +9,7 @@ import (
 	"github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/runtime/loader"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 type Tracing struct {

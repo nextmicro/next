@@ -9,10 +9,10 @@ import (
 
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/nextmicro/gokit/trace/httpconv"
 	thttp "github.com/nextmicro/next/transport/http"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
-	"go.opentelemetry.io/otel/semconv/v1.20.0/httpconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/proto"
