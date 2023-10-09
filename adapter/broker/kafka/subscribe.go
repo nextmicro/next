@@ -8,6 +8,7 @@ import (
 	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/nextmicro/next/broker"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/Shopify/sarama"
 	tracex "github.com/nextmicro/gokit/trace"
@@ -15,7 +16,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -117,8 +118,10 @@ func (c *consumerGroupHandler) Handler(msg *sarama.ConsumerMessage, sess sarama.
 	spanCtx := trace.SpanContextFromContext(ctx)
 	ctx = baggage.ContextWithBaggage(ctx, bags)
 
+	attributes := make([]attribute.KeyValue, 0, 1)
+	attributes = append(attributes, semconv.MessagingOperationKey.String("process"))
 	ctx, span = tr.Start(trace.ContextWithRemoteSpanContext(ctx, spanCtx), fmt.Sprintf("Kafka Consumer %s", msg.Topic), trace.WithAttributes(
-		semconv.MessagingOperationProcess,
+		attributes...,
 	))
 
 	defer span.End()
