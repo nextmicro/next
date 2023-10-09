@@ -88,7 +88,7 @@ func (loader *logger) Watch() error {
 			return
 		}
 
-		log.DefaultLogger.SetLevel(log.ParseLevel(cfg.Level))
+		//log.DefaultLogger.SetLevel(log.ParseLevel(cfg.Level))
 		log.Infof("logger config change, successfully loaded, old: %+v, new: %+v", loader.cfg, cfg)
 		loader.cfg = cfg
 	})

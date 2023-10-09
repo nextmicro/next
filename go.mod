@@ -8,7 +8,7 @@ require (
 	github.com/nextmicro/gokit/timex v1.0.0
 	github.com/nextmicro/gokit/trace v1.0.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/otel v1.16.0
+	go.opentelemetry.io/otel v1.19.0
 	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 )
@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	go.etcd.io/etcd/client/v3 v3.5.9
 	go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama v0.42.0
-	go.opentelemetry.io/otel/trace v1.16.0
+	go.opentelemetry.io/otel/trace v1.19.0
 	golang.org/x/net v0.12.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
@@ -99,7 +99,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
 	go.opentelemetry.io/otel/exporters/jaeger v1.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/zipkin v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
