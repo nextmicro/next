@@ -33,9 +33,10 @@ func options(c *config.Logger) []log.Option {
 	for k, v := range c.Metadata {
 		md[k] = v
 	}
-	opts = append(opts) //log.WithConsole(c.Console),
-	//log.WithDisableDisk(!c.File),
-	//log.WithFields(md),
-
+	//opts = append(opts,
+	//	log.WithConsole(c.Console),
+	//	log.WithDisableDisk(!c.File),
+	//	log.WithFields(md),
+	//)
 	return opts
 }
