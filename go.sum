@@ -360,8 +360,8 @@ github.com/nextmicro/gokit/timex v1.0.0 h1:HeK5hUV+xffQIslHR1cS3PR/tvXd1E9xVbuKA
 github.com/nextmicro/gokit/timex v1.0.0/go.mod h1:Tle+wEICdsJbjAW37txFfqBqeU6oyIBjsjFt2TnWT54=
 github.com/nextmicro/gokit/trace v1.0.1 h1:9PU7NjIioJNLqhc8m9r6tDp/PRdBuyUfe+090NM7lrs=
 github.com/nextmicro/gokit/trace v1.0.1/go.mod h1:vNlaArhryln6CO14brUZWm11Jh/8Z8HXIx8pfvjFDyY=
-github.com/nextmicro/logger v1.0.1 h1:UY5GZ4r4AHxW2VVT6aNqob4tbS/3Qk3YjncDYsiyXLA=
-github.com/nextmicro/logger v1.0.1/go.mod h1:rCH09pLt+Hr7hs+yOrpKQ2Q2D81mIqmmwlsKYk8AL2E=
+github.com/nextmicro/logger v1.0.2 h1:jmqZGb5siNiozh9PwbeQbdy03RYWVl9y64BBIivpAbU=
+github.com/nextmicro/logger v1.0.2/go.mod h1:rCH09pLt+Hr7hs+yOrpKQ2Q2D81mIqmmwlsKYk8AL2E=
 github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b h1:FfH+VrHHk6Lxt9HdVS0PXzSXFyS2NbZKXv33FYPol0A=
 github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b/go.mod h1:AC62GU6hc0BrNm+9RK9VSiwa/EUe1bkIeFORAMcHvJU=
 github.com/openzipkin/zipkin-go v0.4.2 h1:zjqfqHjUpPmB3c1GlCvvgsM1G4LkvqQbBDueDOCg/jA=
