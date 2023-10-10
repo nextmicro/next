@@ -23,7 +23,7 @@ require (
 	github.com/hashicorp/consul/api v1.25.1
 	github.com/miekg/dns v1.1.55
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.3
-	github.com/nextmicro/logger v1.0.2
+	github.com/nextmicro/logger v1.0.3
 	github.com/prometheus/client_golang v1.17.0
 	go.etcd.io/etcd/client/v3 v3.5.9
 	go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama v0.42.0
