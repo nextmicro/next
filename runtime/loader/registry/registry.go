@@ -87,10 +87,10 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 	default:
 		if loader.cfg == nil {
 			loader.cfg = &config.Registry{
-				Name: "mdns",
+				Name: "memory",
 			}
 		}
-		registry.DefaultRegistry = registry.NewRegistry()
+		registry.DefaultRegistry = registry.NewMemory()
 	}
 
 	loader.initialized = true

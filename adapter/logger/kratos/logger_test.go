@@ -25,5 +25,5 @@ func TestDefaultLogger_Log(t *testing.T) {
 
 	_log.Log(level, "msg", "value1")
 	_log.Log(level, log.DefaultMessageKey, "test log")
-	_log.Log(level, "tttt", "key1", "ccc")
+	_log.Log(level, "tttt", "key1", "ccc", "vvv")
 }

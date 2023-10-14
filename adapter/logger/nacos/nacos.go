@@ -5,46 +5,46 @@ import (
 	log "github.com/nextmicro/logger"
 )
 
-type nacos struct {
+type Nacos struct {
 	log.Logger
 }
 
-func NewNacos(log log.Logger) *nacos {
-	return &nacos{log}
+func NewNacos(log log.Logger) *Nacos {
+	return &Nacos{log}
 }
 
-func (l *nacos) SetLogger() {
+func (l *Nacos) SetLogger() {
 	logger.SetLogger(l)
 }
 
-func (l *nacos) Info(args ...interface{}) {
+func (l *Nacos) Info(args ...interface{}) {
 	l.Logger.WithCallDepth(1).Info(args...)
 }
 
-func (l *nacos) Warn(args ...interface{}) {
+func (l *Nacos) Warn(args ...interface{}) {
 	l.Logger.WithCallDepth(1).Warn(args...)
 }
 
-func (l *nacos) Error(args ...interface{}) {
+func (l *Nacos) Error(args ...interface{}) {
 	l.Logger.WithCallDepth(1).Error(args...)
 }
 
-func (l *nacos) Debug(args ...interface{}) {
+func (l *Nacos) Debug(args ...interface{}) {
 	l.Logger.WithCallDepth(1).Debug(args...)
 }
 
-func (l *nacos) Infof(fmt string, args ...interface{}) {
+func (l *Nacos) Infof(fmt string, args ...interface{}) {
 	l.Logger.WithCallDepth(1).Infof(fmt, args...)
 }
 
-func (l *nacos) Warnf(fmt string, args ...interface{}) {
+func (l *Nacos) Warnf(fmt string, args ...interface{}) {
 	l.Logger.WithCallDepth(1).Warnf(fmt, args...)
 }
 
-func (l *nacos) Errorf(fmt string, args ...interface{}) {
+func (l *Nacos) Errorf(fmt string, args ...interface{}) {
 	l.Logger.WithCallDepth(1).Errorf(fmt, args...)
 }
 
-func (l *nacos) Debugf(fmt string, args ...interface{}) {
+func (l *Nacos) Debugf(fmt string, args ...interface{}) {
 	l.Logger.WithCallDepth(1).Debugf(fmt, args...)
 }

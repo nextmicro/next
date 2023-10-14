@@ -117,8 +117,7 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			// show log
 			if duration > options.GetSlowThreshold().AsDuration() {
 				log.Info(kind + " client slow")
-			}
-			if err != nil {
+			} else if err != nil {
 				log.Error(kind + " client")
 			} else {
 				log.Info(kind + " client")
@@ -184,8 +183,7 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			// show log
 			if duration > options.GetSlowThreshold().AsDuration() {
 				log.Info(kind + " server slow")
-			}
-			if err != nil {
+			} else if err != nil {
 				log.Error(kind + " server")
 			} else {
 				log.Info(kind + " server")
