@@ -28,7 +28,7 @@ func TestConfig_Init(t *testing.T) {
 	err := json.Unmarshal(data, &raw)
 	assert.NoError(t, err)
 
-	path := filepath.Join(os.TempDir(), "application-dev.json")
+	path := filepath.Join(os.TempDir(), "dev.yaml")
 	fh, err := os.Create(path)
 	if err != nil {
 		t.Error(err)
@@ -64,7 +64,7 @@ func TestConfig_InitA(t *testing.T) {
   }
 }`
 
-	path := filepath.Join(os.TempDir(), "application-dev.json")
+	path := filepath.Join(os.TempDir(), "dev.yaml")
 	fh, err := os.Create(path)
 	assert.NoError(t, err)
 
@@ -85,4 +85,9 @@ func TestConfig_InitA(t *testing.T) {
 
 	assert.Equal(t, "127.0.0.1:6379", db.Redis.Address)
 	assert.Equal(t, "user:password@tcp(localhost:port)/db?charset=utf8mb4&parseTime=True&loc=Local", db.Database.Datasource)
+}
+
+func TestBizConfPath(t *testing.T) {
+	path := config.BizConfPath()
+	t.Log(path)
 }

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	_baseConf = "application.json"
+	_baseConf = "config.yaml"
 )
 
 var (

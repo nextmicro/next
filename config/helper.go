@@ -1,13 +1,21 @@
 package config
 
 import (
+	"path/filepath"
+
 	"github.com/go-kratos/kratos/v2/config"
+	"github.com/nextmicro/next/pkg/env"
 )
 
 var (
 	// DefaultConfig is a default config.
 	DefaultConfig config.Config
 )
+
+// BizConfPath returns the biz config path.
+func BizConfPath() string {
+	return filepath.Join(env.WorkDir(), "config", env.DeployEnvironment()+".yaml")
+}
 
 // Load loads config from config source.
 func Load() error {
