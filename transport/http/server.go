@@ -209,6 +209,9 @@ func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
 	if cfg.GetAddr() != "" {
 		s.address = cfg.GetAddr()
 	}
+	if cfg.GetNetwork() != "" {
+		s.network = cfg.GetNetwork()
+	}
 	if cfg.GetTimeout().AsDuration() != 0 {
 		s.timeout = cfg.GetTimeout().AsDuration()
 	}
