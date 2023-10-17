@@ -14,7 +14,7 @@ var (
 
 // BizConfPath returns the biz config path.
 func BizConfPath() string {
-	return filepath.Join(env.WorkDir(), "config", env.DeployEnvironment()+".yaml")
+	return filepath.Join(env.WorkDir(), "configs", env.DeployEnvironment()+".yaml")
 }
 
 // Load loads config from config source.
