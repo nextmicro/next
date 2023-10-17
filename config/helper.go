@@ -1,8 +1,6 @@
 package config
 
 import (
-	"path/filepath"
-
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/nextmicro/next/pkg/env"
 )
@@ -12,9 +10,9 @@ var (
 	DefaultConfig config.Config
 )
 
-// BizConfPath returns the biz config path.
-func BizConfPath() string {
-	return filepath.Join(env.WorkDir(), "configs", env.DeployEnvironment()+".yaml")
+// BizConfFile returns the biz config filename.
+func BizConfFile() string {
+	return env.DeployEnvironment() + ".yaml"
 }
 
 // Load loads config from config source.
