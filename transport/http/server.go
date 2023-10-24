@@ -13,11 +13,10 @@ import (
 	"github.com/nextmicro/next/internal/endpoint"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/matcher"
-	middleware2 "github.com/nextmicro/next/middleware"
+	customMiddleware "github.com/nextmicro/next/middleware"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
-	chain "github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/gorilla/mux"
 )
@@ -181,17 +180,13 @@ func NewServer(opts ...ServerOption) *Server {
 		strictSlash: true,
 		router:      mux.NewRouter(),
 	}
-	for _, o := range opts {
-		o(srv)
-	}
 
-	serverMs := srv.buildMiddlewareOptions()
-	// server middleware first
-	if len(serverMs) > 0 {
-		userMs := srv.middleware
-		srv.middleware = append(serverMs, userMs...)
-	}
-	srv.matcher.Use(srv.middleware...)
+	// apply config
+	srv.applyConfig()
+	// apply options
+	srv.applyOptions(opts)
+	srv.buildMiddlewareChain()
+
 	srv.router.StrictSlash(srv.strictSlash)
 	srv.router.NotFoundHandler = http.DefaultServeMux
 	srv.router.MethodNotAllowedHandler = http.DefaultServeMux
@@ -203,8 +198,8 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
-// buildMiddlewareOptions builds the http server options.
-func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
+// applyConfig applys the config.
+func (s *Server) applyConfig() {
 	cfg := conf.ApplicationConfig().GetServer().GetHttp()
 	if cfg.GetAddr() != "" {
 		s.address = cfg.GetAddr()
@@ -215,14 +210,38 @@ func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
 	if cfg.GetTimeout().AsDuration() != 0 {
 		s.timeout = cfg.GetTimeout().AsDuration()
 	}
+}
 
-	ms := make([]chain.Middleware, 0, len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware2.BuildMiddleware("server", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
+// applyOptions applys the options.
+func (s *Server) applyOptions(opts []ServerOption) {
+	for _, o := range opts {
+		o(s)
+	}
+}
+
+// buildMiddlewareChain builds the middleware chain.
+func (s *Server) buildMiddlewareChain() {
+	serverMiddleware := s.buildServerMiddleware()
+	userMiddlewares := s.buildUserMiddlewares()
+
+	s.middleware = append(serverMiddleware, userMiddlewares...)
+	s.matcher.Use(s.middleware...)
+}
+
+// buildServerMiddleware builds the server middlewares.
+func (s *Server) buildServerMiddleware() (ms []middleware.Middleware) {
+	cfg := conf.ApplicationConfig().GetServer().GetHttp()
+	if cfg == nil {
+		return ms
 	}
 
+	ms, _ = customMiddleware.BuildMiddleware("http.server", cfg.GetMiddlewares())
 	return ms
+}
+
+// buildUserMiddlewares builds the user middlewares.
+func (s *Server) buildUserMiddlewares() []middleware.Middleware {
+	return s.middleware
 }
 
 // Use uses a service middleware with selector.

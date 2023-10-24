@@ -7,12 +7,11 @@ import (
 	"net/url"
 	"time"
 
-	chain "github.com/go-kratos/kratos/v2/middleware"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/internal/endpoint"
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/matcher"
-	middleware2 "github.com/nextmicro/next/middleware"
+	customMiddleware "github.com/nextmicro/next/middleware"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/admin"
@@ -150,40 +149,13 @@ func NewServer(opts ...ServerOption) *Server {
 		health:  health.NewServer(),
 		matcher: matcher.New(),
 	}
-	for _, o := range opts {
-		o(srv)
-	}
-	serverMs := srv.buildMiddlewareOptions()
-	// server middleware first
-	if len(serverMs) > 0 {
-		userMs := srv.middleware
-		srv.middleware = append(serverMs, userMs...)
-	}
-	srv.matcher.Use(srv.middleware...)
-
-	unaryInts := []grpc.UnaryServerInterceptor{
-		srv.unaryServerInterceptor(),
-	}
-	streamInts := []grpc.StreamServerInterceptor{
-		srv.streamServerInterceptor(),
-	}
-	if len(srv.unaryInts) > 0 {
-		unaryInts = append(unaryInts, srv.unaryInts...)
-	}
-	if len(srv.streamInts) > 0 {
-		streamInts = append(streamInts, srv.streamInts...)
-	}
-	grpcOpts := []grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(unaryInts...),
-		grpc.ChainStreamInterceptor(streamInts...),
-	}
-	if srv.tlsConf != nil {
-		grpcOpts = append(grpcOpts, grpc.Creds(credentials.NewTLS(srv.tlsConf)))
-	}
-	if len(srv.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, srv.grpcOpts...)
-	}
-	srv.Server = grpc.NewServer(grpcOpts...)
+	// apply config
+	srv.applyConfig()
+	// apply options
+	srv.applyOptions(opts)
+	srv.buildMiddlewareChain()
+	// build grpc server
+	srv.Server = srv.buildInterceptors()
 	srv.metadata = apimd.NewServer(srv.Server)
 	// internal register
 	if !srv.customHealth {
@@ -196,8 +168,8 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
-// buildMiddlewareOptions builds the http server options.
-func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
+// applyConfig applys the config.
+func (s *Server) applyConfig() {
 	cfg := conf.ApplicationConfig().GetServer().GetGrpc()
 	if cfg.GetAddr() != "" {
 		s.address = cfg.GetAddr()
@@ -208,14 +180,65 @@ func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
 	if cfg.GetTimeout().AsDuration() != 0 {
 		s.timeout = cfg.GetTimeout().AsDuration()
 	}
+}
 
-	ms := make([]chain.Middleware, 0, len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := middleware2.BuildMiddleware("server", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
+// applyOptions applys the options.
+func (s *Server) applyOptions(opts []ServerOption) {
+	for _, o := range opts {
+		o(s)
+	}
+}
+
+// buildMiddlewareChain builds the middleware chain.
+func (s *Server) buildMiddlewareChain() {
+	serverMiddleware := s.buildServerMiddleware()
+	userMiddlewares := s.buildUserMiddlewares()
+
+	s.middleware = append(serverMiddleware, userMiddlewares...)
+	s.matcher.Use(s.middleware...)
+}
+
+// buildServerMiddleware builds the server middlewares.
+func (s *Server) buildServerMiddleware() (ms []middleware.Middleware) {
+	cfg := conf.ApplicationConfig().GetServer().GetGrpc()
+	if cfg == nil {
+		return ms
 	}
 
+	ms, _ = customMiddleware.BuildMiddleware("grpc.server", cfg.GetMiddlewares())
 	return ms
+}
+
+// buildUserMiddlewares builds the user middlewares.
+func (s *Server) buildUserMiddlewares() []middleware.Middleware {
+	return s.middleware
+}
+
+// buildInterceptors builds the interceptors.
+func (s *Server) buildInterceptors() *grpc.Server {
+	unaryInterceptors := []grpc.UnaryServerInterceptor{
+		s.unaryServerInterceptor(),
+	}
+	streamInterceptors := []grpc.StreamServerInterceptor{
+		s.streamServerInterceptor(),
+	}
+	if len(s.unaryInts) > 0 {
+		unaryInterceptors = append(unaryInterceptors, s.unaryInts...)
+	}
+	if len(s.streamInts) > 0 {
+		streamInterceptors = append(streamInterceptors, s.streamInts...)
+	}
+	grpcOpts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(unaryInterceptors...),
+		grpc.ChainStreamInterceptor(streamInterceptors...),
+	}
+	if s.tlsConf != nil {
+		grpcOpts = append(grpcOpts, grpc.Creds(credentials.NewTLS(s.tlsConf)))
+	}
+	if len(s.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, s.grpcOpts...)
+	}
+	return grpc.NewServer(grpcOpts...)
 }
 
 // Use uses a service middleware with selector.
@@ -244,19 +267,19 @@ func (s *Server) Start(ctx context.Context) error {
 		return s.err
 	}
 	s.baseCtx = ctx
-	log.Infof("[gRPC] server listening on: %s", s.lis.Addr().String())
+	log.Infof("[GRPC] server listening on: %s", s.lis.Addr().String())
 	s.health.Resume()
 	return s.Serve(s.lis)
 }
 
-// Stop stop the gRPC server.
+// Stop stop the GRPC server.
 func (s *Server) Stop(_ context.Context) error {
 	if s.adminClean != nil {
 		s.adminClean()
 	}
 	s.health.Shutdown()
 	s.GracefulStop()
-	log.Info("[gRPC] server stopping")
+	log.Info("[GRPC] server stopping")
 	return nil
 }
 

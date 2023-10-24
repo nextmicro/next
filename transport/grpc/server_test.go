@@ -265,12 +265,12 @@ func TestServer_unaryServerInterceptor(t *testing.T) {
 		t.Errorf("expect %v, got %v", nil, err)
 	}
 	srv := &Server{
-		baseCtx:    context.Background(),
-		endpoint:   u,
-		timeout:    time.Duration(10),
-		middleware: matcher.New(),
+		baseCtx:  context.Background(),
+		endpoint: u,
+		timeout:  time.Duration(10),
+		matcher:  matcher.New(),
 	}
-	srv.middleware.Use(EmptyMiddleware())
+	srv.matcher.Use(EmptyMiddleware())
 	req := &struct{}{}
 	rv, err := srv.unaryServerInterceptor()(context.TODO(), req, &grpc.UnaryServerInfo{}, func(ctx context.Context, req interface{}) (i interface{}, e error) {
 		return &testResp{Data: "hi"}, nil
