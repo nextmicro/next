@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/gorilla/mux"
 
@@ -35,7 +34,6 @@ func (r *CustomResponse) Unwrap() error {
 
 // Context is an HTTP Context.
 type Context interface {
-	context.Context
 	Vars() url.Values
 	Query() url.Values
 	Form() url.Values
@@ -195,30 +193,30 @@ func (c *wrapper) Context() context.Context {
 	return c.Request().Context()
 }
 
-func (c *wrapper) Deadline() (time.Time, bool) {
-	if c.req == nil {
-		return time.Time{}, false
-	}
-	return c.req.Context().Deadline()
-}
-
-func (c *wrapper) Done() <-chan struct{} {
-	if c.req == nil {
-		return nil
-	}
-	return c.req.Context().Done()
-}
-
-func (c *wrapper) Err() error {
-	if c.req == nil {
-		return context.Canceled
-	}
-	return c.req.Context().Err()
-}
-
-func (c *wrapper) Value(key interface{}) interface{} {
-	if c.req == nil {
-		return nil
-	}
-	return c.req.Context().Value(key)
-}
+//func (c *wrapper) Deadline() (time.Time, bool) {
+//	if c.req == nil {
+//		return time.Time{}, false
+//	}
+//	return c.req.Context().Deadline()
+//}
+//
+//func (c *wrapper) Done() <-chan struct{} {
+//	if c.req == nil {
+//		return nil
+//	}
+//	return c.req.Context().Done()
+//}
+//
+//func (c *wrapper) Err() error {
+//	if c.req == nil {
+//		return context.Canceled
+//	}
+//	return c.req.Context().Err()
+//}
+//
+//func (c *wrapper) Value(key interface{}) interface{} {
+//	if c.req == nil {
+//		return nil
+//	}
+//	return c.req.Context().Value(key)
+//}
