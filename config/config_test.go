@@ -88,6 +88,6 @@ func TestConfig_InitA(t *testing.T) {
 }
 
 func TestBizConfPath(t *testing.T) {
-	path := config.BizConfPath()
+	path := config.BizConfFile()
 	t.Log(path)
 }
