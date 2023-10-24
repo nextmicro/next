@@ -185,6 +185,7 @@ func NewServer(opts ...ServerOption) *Server {
 	srv.applyConfig()
 	// apply options
 	srv.applyOptions(opts)
+	// build middleware chain
 	srv.buildMiddlewareChain()
 
 	srv.router.StrictSlash(srv.strictSlash)
@@ -223,7 +224,9 @@ func (s *Server) applyOptions(opts []ServerOption) {
 func (s *Server) buildMiddlewareChain() {
 	serverMiddleware := s.buildServerMiddleware()
 	userMiddlewares := s.buildUserMiddlewares()
-
+	if len(userMiddlewares) == 0 && len(serverMiddleware) == 0 {
+		return
+	}
 	s.middleware = append(serverMiddleware, userMiddlewares...)
 	s.matcher.Use(s.middleware...)
 }

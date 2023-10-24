@@ -73,18 +73,21 @@ func Create(cfg *configv1.Middleware) (middleware.Middleware, error) {
 func BuildMiddleware(kind string, _ms []*configv1.Middleware) (ms []middleware.Middleware, err error) {
 	for i := len(_ms) - 1; i >= 0; i-- {
 		_ms[i].Name = kind + "." + _ms[i].Name
+		_oldName := _ms[i].Name
+		_ms[i].Name = strings.Replace(_ms[i].Name, "grpc", "", 1)
+		_ms[i].Name = strings.Replace(_ms[i].Name, "http", "", 1)
 		m, err := Create(_ms[i])
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
-				log.Warnf("Skip does not exist middleware: %s", _ms[i].Name)
+				log.Warnf("Skip does not exist middleware: %s", _oldName)
 				continue
 			}
 
-			log.Errorf("register middleware: [%s] error: %v", _ms[i].Name, err)
+			log.Errorf("register middleware: [%s] error: %v", _oldName, err)
 			continue
 		}
 
-		log.Infof("register middleware: [%s] success", _ms[i].Name)
+		log.Infof("register middleware: [%s] success", _oldName)
 
 		ms = append(ms, m)
 	}
