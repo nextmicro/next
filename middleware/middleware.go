@@ -74,8 +74,8 @@ func BuildMiddleware(kind string, _ms []*configv1.Middleware) (ms []middleware.M
 	for i := len(_ms) - 1; i >= 0; i-- {
 		_ms[i].Name = kind + "." + _ms[i].Name
 		_oldName := _ms[i].Name
-		_ms[i].Name = strings.Replace(_ms[i].Name, "grpc", "", 1)
-		_ms[i].Name = strings.Replace(_ms[i].Name, "http", "", 1)
+		_ms[i].Name = strings.Replace(_ms[i].Name, "grpc.", "", 1)
+		_ms[i].Name = strings.Replace(_ms[i].Name, "http.", "", 1)
 		m, err := Create(_ms[i])
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {

@@ -156,6 +156,7 @@ func NewServer(opts ...ServerOption) *Server {
 	srv.buildMiddlewareChain()
 	// build grpc server
 	srv.Server = srv.buildInterceptors()
+
 	srv.metadata = apimd.NewServer(srv.Server)
 	// internal register
 	if !srv.customHealth {
@@ -192,9 +193,12 @@ func (s *Server) applyOptions(opts []ServerOption) {
 // buildMiddlewareChain builds the middleware chain.
 func (s *Server) buildMiddlewareChain() {
 	serverMiddleware := s.buildServerMiddleware()
-	userMiddlewares := s.buildUserMiddlewares()
 
-	s.middleware = append(serverMiddleware, userMiddlewares...)
+	if len(serverMiddleware) > 0 {
+		userMs := s.middleware
+		s.middleware = append(serverMiddleware, userMs...)
+	}
+
 	s.matcher.Use(s.middleware...)
 }
 
@@ -207,11 +211,6 @@ func (s *Server) buildServerMiddleware() (ms []middleware.Middleware) {
 
 	ms, _ = customMiddleware.BuildMiddleware("grpc.server", cfg.GetMiddlewares())
 	return ms
-}
-
-// buildUserMiddlewares builds the user middlewares.
-func (s *Server) buildUserMiddlewares() []middleware.Middleware {
-	return s.middleware
 }
 
 // buildInterceptors builds the interceptors.

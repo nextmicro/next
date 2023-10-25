@@ -57,7 +57,6 @@ type Context interface {
 	Blob(int, string, []byte) error
 	Stream(int, string, io.Reader) error
 	Reset(http.ResponseWriter, *http.Request)
-	Context() context.Context
 }
 
 type responseWriter struct {
@@ -119,14 +118,10 @@ func (c *wrapper) SetRequest(r *http.Request) { c.req = r }
 func (c *wrapper) Response() *Response        { return c.res }
 func (c *wrapper) SetResponse(w *Response)    { c.res = w }
 func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
-	next := func(ctx context.Context, req interface{}) (interface{}, error) {
-		c.SetRequest(c.Request().WithContext(ctx))
-		return h(ctx, req)
-	}
 	if tr, ok := transport.FromServerContext(c.req.Context()); ok {
-		return middleware.Chain(c.router.srv.matcher.Match(tr.Operation())...)(next)
+		return middleware.Chain(c.router.srv.matcher.Match(tr.Operation())...)(h)
 	}
-	return middleware.Chain(c.router.srv.matcher.Match(c.req.URL.Path)...)(next)
+	return middleware.Chain(c.router.srv.matcher.Match(c.req.URL.Path)...)(h)
 }
 func (c *wrapper) Bind(v interface{}) error      { return c.router.srv.decBody(c.req, v) }
 func (c *wrapper) BindVars(v interface{}) error  { return c.router.srv.decVars(c.req, v) }
@@ -186,13 +181,6 @@ func (c *wrapper) Stream(code int, contentType string, rd io.Reader) error {
 func (c *wrapper) Reset(w http.ResponseWriter, req *http.Request) {
 	c.req = req
 	c.res.reset(w)
-}
-
-func (c *wrapper) Context() context.Context {
-	if c.Request() == nil {
-		return context.TODO()
-	}
-	return c.Request().Context()
 }
 
 func (c *wrapper) Deadline() (time.Time, bool) {

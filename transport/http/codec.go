@@ -153,7 +153,7 @@ func DefaultErrorEncoder(c Context, err error) {
 	}
 
 	if response.Unwrap() != nil {
-		logger.WithContext(c.Context()).Error(response.Unwrap())
+		logger.WithContext(c.Request().Context()).Error(response.Unwrap())
 	}
 }
 
