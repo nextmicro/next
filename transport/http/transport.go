@@ -50,7 +50,7 @@ func (tr *Transport) Request() *http.Request {
 func (tr *Transport) RequestHeader() transport.Header {
 	return tr.reqHeader
 }
-
+o
 // ReplyHeader returns the reply header.
 func (tr *Transport) ReplyHeader() transport.Header {
 	return tr.replyHeader
