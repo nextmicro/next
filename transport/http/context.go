@@ -118,6 +118,10 @@ func (c *wrapper) SetRequest(r *http.Request) { c.req = r }
 func (c *wrapper) Response() *Response        { return c.res }
 func (c *wrapper) SetResponse(w *Response)    { c.res = w }
 func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
+	//next := func(ctx context.Context, req interface{}) (interface{}, error) {
+	//	c.SetRequest(c.Request().WithContext(ctx))
+	//	return h(ctx, req)
+	//}
 	if tr, ok := transport.FromServerContext(c.req.Context()); ok {
 		return middleware.Chain(c.router.srv.matcher.Match(tr.Operation())...)(h)
 	}

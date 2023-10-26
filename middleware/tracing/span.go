@@ -73,7 +73,6 @@ func setServerSpan(ctx context.Context, span trace.Span, request any) {
 		case transport.KindHTTP:
 			if ht, ok := tr.(thttp.Transporter); ok {
 				attrs = append(attrs, httpconv.ServerRequest("", ht.Request())...)
-				remote = ht.Request().RemoteAddr
 			}
 		case transport.KindGRPC:
 			if p, ok := peer.FromContext(ctx); ok {

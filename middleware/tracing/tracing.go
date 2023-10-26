@@ -150,6 +150,10 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 						span.SetAttributes(semconv.RPCGRPCStatusCodeOk)
 					}
 				}
+
+				tr.ReplyHeader().Set("x-span-id", span.SpanContext().SpanID().String())
+				tr.ReplyHeader().Set("x-trace-id", span.SpanContext().TraceID().String())
+
 			} else {
 				reply, err = handler(ctx, req)
 			}
