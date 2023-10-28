@@ -20,9 +20,9 @@ var _ Context = (*wrapper)(nil)
 
 type CustomResponse struct {
 	Code     int               `json:"code"`
-	Reason   string            `json:"reason"`
+	Reason   string            `json:"reason,omitempty"`
 	Message  string            `json:"message"`
-	Data     interface{}       `json:"data"`
+	Data     interface{}       `json:"data,omitempty"`
 	TraceId  string            `json:"trace_id,omitempty"`
 	Metadata map[string]string `json:"metadata,omitempty"`
 	Cause    error             `json:"-"`

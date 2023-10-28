@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/nextmicro/gokit/trace"
 	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/internal/httputil"
 
@@ -118,7 +117,7 @@ func DefaultErrorEncoder(c Context, err error) {
 		Reason:   "UNKNOWN_REASON",
 		Message:  "服务内部错误",
 		Metadata: make(map[string]string),
-		TraceId:  trace.ExtractTraceId(c.Request().Context()),
+		TraceId:  c.Response().Header().Get("x-trace-id"),
 	}
 
 	switch errType := err.(type) {
