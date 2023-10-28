@@ -292,7 +292,7 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args inte
 	}
 	app, ok := kratos.FromContext(ctx)
 	if ok {
-		req.Header.Set("x-md-local-callee", app.Name())
+		req.Header.Set("x-md-local-caller", app.Name())
 	}
 	ctx = transport.NewClientContext(ctx, &Transport{
 		endpoint:     client.opts.endpoint,
