@@ -45,17 +45,6 @@ func extractError(err error) string {
 	return fmt.Sprintf("%+v", err)
 }
 
-// extractArgs returns the string of the req
-func extractArgs(req interface{}) string {
-	if redacter, ok := req.(Redacter); ok {
-		return redacter.Redact()
-	}
-	if stringer, ok := req.(fmt.Stringer); ok {
-		return stringer.String()
-	}
-	return fmt.Sprintf("%+v", req)
-}
-
 // Client is an client logging middleware.
 func Client(c *config.Middleware) (middleware.Middleware, error) {
 	v := durationpb.New(time.Millisecond * 300)
