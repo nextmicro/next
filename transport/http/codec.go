@@ -99,7 +99,7 @@ func DefaultResponseEncoder(w http.ResponseWriter, r *http.Request, v interface{
 		Reason:  "OK",
 		Message: "success",
 		Data:    v,
-		TraceId: trace.ExtractTraceId(r.Context()),
+		TraceId: w.Header().Get("x-trace-id"),
 	}
 	codec, _ := CodecForRequest(r, "Accept")
 	data, err := codec.Marshal(rsp)

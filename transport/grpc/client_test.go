@@ -7,11 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/registry"
+	"google.golang.org/grpc"
 )
 
 func TestWithEndpoint(t *testing.T) {
@@ -134,7 +132,6 @@ func TestDial(t *testing.T) {
 func TestDialConn(t *testing.T) {
 	_, err := dial(
 		context.Background(),
-		&anypb.Any{},
 		true,
 		WithDiscovery(&mockRegistry{}),
 		WithTimeout(10*time.Second),

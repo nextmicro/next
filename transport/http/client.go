@@ -47,6 +47,7 @@ type ClientOption func(*clientOptions)
 
 // Client is an HTTP transport client.
 type clientOptions struct {
+	cfg          *v1.HTTPClient
 	ctx          context.Context
 	tlsConf      *tls.Config
 	timeout      time.Duration
@@ -155,6 +156,16 @@ func WithTLSConfig(c *tls.Config) ClientOption {
 	}
 }
 
+// WithConfig with client config.
+func WithConfig(cfg *anypb.Any) ClientOption {
+	return func(o *clientOptions) {
+		o.cfg = &v1.HTTPClient{}
+		if cfg != nil && cfg.Value != nil {
+			_ = anypb.UnmarshalTo(cfg, o.cfg, proto.UnmarshalOptions{Merge: true})
+		}
+	}
+}
+
 // Client is an HTTP client.
 type Client struct {
 	opts     clientOptions
@@ -166,7 +177,7 @@ type Client struct {
 }
 
 // NewClient returns an HTTP client.
-func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	options := clientOptions{
 		ctx:          ctx,
 		discovery:    discov.DefaultRegistry,
@@ -177,23 +188,11 @@ func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Clie
 		transport:    http.DefaultTransport,
 		subsetSize:   25,
 	}
-
-	httpClient := &v1.HTTPClient{}
-	if cfg != nil && cfg.Value != nil {
-		if err := anypb.UnmarshalTo(cfg, httpClient, proto.UnmarshalOptions{Merge: true}); err != nil {
-			return nil, err
-		}
-	}
-	if httpClient.GetTimeout().AsDuration() > 0 {
-		options.timeout = httpClient.GetTimeout().AsDuration()
-	}
-	if httpClient.GetEndpoint() != "" {
-		options.endpoint = httpClient.GetEndpoint()
-	}
-
 	for _, o := range opts {
 		o(&options)
 	}
+	options.applyConfig()
+
 	if options.tlsConf != nil {
 		if tr, ok := options.transport.(*http.Transport); ok {
 			tr.TLSClientConfig = options.tlsConf
@@ -204,25 +203,19 @@ func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Clie
 	if err != nil {
 		return nil, err
 	}
-	selector := selector.GlobalSelector().Build()
+	selectorBuild := selector.GlobalSelector().Build()
 	var r *resolver
 	if options.discovery != nil {
 		if target.Scheme == "discovery" {
-			if r, err = newResolver(ctx, options.discovery, target, selector, options.block, insecure, options.subsetSize); err != nil {
+			if r, err = newResolver(ctx, options.discovery, target, selectorBuild, options.block, insecure, options.subsetSize); err != nil {
 				return nil, fmt.Errorf("[http client] new resolver failed!err: %v", options.endpoint)
 			}
 		} else if _, _, err = host.ExtractHostPort(options.endpoint); err != nil {
 			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
 		}
 	}
-	serverMs := buildMiddlewareDialOptions(httpClient)
-	// server middleware first
-	if len(serverMs) > 0 {
-		userMs := options.middleware
-		options.middleware = append(serverMs, userMs...)
-	}
 
-	return &Client{
+	client := &Client{
 		opts:     options,
 		target:   target,
 		insecure: insecure,
@@ -231,18 +224,35 @@ func NewClient(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*Clie
 			Timeout:   options.timeout,
 			Transport: options.transport,
 		},
-		selector: selector,
-	}, nil
+		selector: selectorBuild,
+	}
+	client.buildMiddlewareChain()
+
+	return client, nil
 }
 
-// buildMiddlewareDialOptions build dial options.
-func buildMiddlewareDialOptions(cfg *v1.HTTPClient) []middleware.Middleware {
-	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := chain.BuildMiddleware("client", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
+// applyConfig applys the config.
+func (options *clientOptions) applyConfig() {
+	if options.cfg.GetTimeout().AsDuration() > 0 {
+		options.timeout = options.cfg.GetTimeout().AsDuration()
 	}
+	if options.cfg.GetEndpoint() != "" {
+		options.endpoint = options.cfg.GetEndpoint()
+	}
+}
 
+// buildMiddlewareChain builds the middleware chain.
+func (client *Client) buildMiddlewareChain() {
+	clientMiddleware := client.buildClientMiddleware()
+	if len(clientMiddleware) > 0 {
+		userMs := client.opts.middleware
+		client.opts.middleware = append(clientMiddleware, userMs...)
+	}
+}
+
+// buildClientMiddleware builds the client middlewares.
+func (client *Client) buildClientMiddleware() (ms []middleware.Middleware) {
+	ms, _ = chain.BuildMiddleware("http.client", client.opts.cfg.GetMiddlewares())
 	return ms
 }
 
@@ -270,6 +280,9 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args inte
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return err
+	}
+	if c.headerCarrier != nil {
+		req.Header = *c.headerCarrier
 	}
 	if contentType != "" {
 		req.Header.Set("Content-Type", c.contentType)

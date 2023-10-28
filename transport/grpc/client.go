@@ -120,8 +120,19 @@ func WithPrintDiscoveryDebugLog(p bool) ClientOption {
 	}
 }
 
+// WithConfig with client config.
+func WithConfig(cfg *anypb.Any) ClientOption {
+	return func(o *clientOptions) {
+		o.cfg = &v1.GRPCClient{}
+		if cfg != nil && cfg.Value != nil {
+			_ = anypb.UnmarshalTo(cfg, o.cfg, proto.UnmarshalOptions{Merge: true})
+		}
+	}
+}
+
 // clientOptions is gRPC Client
 type clientOptions struct {
+	cfg                    *v1.GRPCClient
 	endpoint               string
 	subsetSize             int
 	tlsConf                *tls.Config
@@ -137,41 +148,33 @@ type clientOptions struct {
 }
 
 // Dial returns a GRPC connection.
-func Dial(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*grpc.ClientConn, error) {
-	return dial(ctx, cfg, false, opts...)
+func Dial(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, false, opts...)
 }
 
 // DialInsecure returns an insecure GRPC connection.
-func DialInsecure(ctx context.Context, cfg *anypb.Any, opts ...ClientOption) (*grpc.ClientConn, error) {
-	return dial(ctx, cfg, true, opts...)
+func DialInsecure(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, error) {
+	return dial(ctx, true, opts...)
 }
 
-func dial(ctx context.Context, cfg *anypb.Any, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
+func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
 	options := clientOptions{
 		timeout:                2000 * time.Millisecond,
 		balancerName:           balancerName,
 		subsetSize:             25,
 		printDiscoveryDebugLog: true,
 	}
-
-	grpcClient := &v1.GRPCClient{}
-	if cfg != nil && cfg.Value != nil {
-		if err := anypb.UnmarshalTo(cfg, grpcClient, proto.UnmarshalOptions{Merge: true}); err != nil {
-			return nil, err
-		}
-	}
-	if grpcClient.GetTimeout().AsDuration() > 0 {
-		options.timeout = grpcClient.GetTimeout().AsDuration()
-	}
-	if grpcClient.GetEndpoint() != "" {
-		options.endpoint = grpcClient.GetEndpoint()
-	}
-
 	for _, o := range opts {
 		o(&options)
 	}
+	if options.cfg.GetTimeout().AsDuration() > 0 {
+		options.timeout = options.cfg.GetTimeout().AsDuration()
+	}
+	if options.cfg.GetEndpoint() != "" {
+		options.endpoint = options.cfg.GetEndpoint()
+	}
 
-	serverMs := buildMiddlewareDialOptions(grpcClient)
+	serverMs := buildMiddlewareDialOptions(options.cfg)
 	// server middleware first
 	if len(serverMs) > 0 {
 		userMs := options.middleware
@@ -223,7 +226,7 @@ func dial(ctx context.Context, cfg *anypb.Any, insecure bool, opts ...ClientOpti
 func buildMiddlewareDialOptions(cfg *v1.GRPCClient) []middleware.Middleware {
 	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
 	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := chain.BuildMiddleware("client", cfg.GetMiddlewares())
+		serverMs, _ := chain.BuildMiddleware("grpc.client", cfg.GetMiddlewares())
 		ms = append(ms, serverMs...)
 	}
 

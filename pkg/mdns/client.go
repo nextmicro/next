@@ -89,7 +89,9 @@ func Query(params *QueryParam) error {
 		if params.Timeout == 0 {
 			params.Timeout = time.Second
 		}
-		params.Context, _ = context.WithTimeout(context.Background(), params.Timeout)
+		var cancel context.CancelFunc
+		params.Context, cancel = context.WithTimeout(context.Background(), params.Timeout)
+		defer cancel()
 		if err != nil {
 			return err
 		}
@@ -152,7 +154,6 @@ func Listen(entries chan<- *ServiceEntry, exit chan struct{}) error {
 		}
 	}
 
-	return nil
 }
 
 // Lookup is the same as Query, however it uses all the default parameters.

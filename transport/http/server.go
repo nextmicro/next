@@ -235,7 +235,6 @@ func (s *Server) applyOptions(opts []ServerOption) {
 // buildMiddlewareChain builds the middleware chain.
 func (s *Server) buildMiddlewareChain() {
 	serverMiddleware := s.buildServerMiddleware()
-
 	if len(serverMiddleware) > 0 {
 		userMs := s.middleware
 		s.middleware = append(serverMiddleware, userMs...)

@@ -308,34 +308,34 @@ func TestCodecForResponse(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:8888"))
+	_, err := NewClient(context.Background(), WithEndpoint("127.0.0.1:8888"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:9999"), WithTLSConfig(&tls.Config{ServerName: "www.kratos.com", RootCAs: nil}))
+	_, err = NewClient(context.Background(), WithEndpoint("127.0.0.1:9999"), WithTLSConfig(&tls.Config{ServerName: "www.kratos.com", RootCAs: nil}))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("discovery:///go-kratos"))
+	_, err = NewClient(context.Background(), WithDiscovery(&mockDiscovery{}), WithEndpoint("discovery:///go-kratos"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("127.0.0.1:8888"))
+	_, err = NewClient(context.Background(), WithDiscovery(&mockDiscovery{}), WithEndpoint("127.0.0.1:8888"))
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewClient(context.Background(), &anypb.Any{}, WithEndpoint("127.0.0.1:8888:xxxxa"))
+	_, err = NewClient(context.Background(), WithEndpoint("127.0.0.1:8888:xxxxa"))
 	if err == nil {
 		t.Error("except a parseTarget error")
 	}
-	_, err = NewClient(context.Background(), &anypb.Any{}, WithDiscovery(&mockDiscovery{}), WithEndpoint("https://go-kratos.dev/"))
+	_, err = NewClient(context.Background(), WithDiscovery(&mockDiscovery{}), WithEndpoint("https://go-kratos.dev/"))
 	if err == nil {
 		t.Error("err should not be equal to nil")
 	}
 
 	client, err := NewClient(
 		context.Background(),
-		&anypb.Any{},
+		WithConfig(&anypb.Any{}),
 		WithDiscovery(&mockDiscovery{}),
 		WithEndpoint("discovery:///go-kratos"),
 		WithMiddleware(func(handler middleware.Handler) middleware.Handler {

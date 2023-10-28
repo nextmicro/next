@@ -13,8 +13,6 @@ import (
 
 	"github.com/nextmicro/next/internal/matcher"
 	pb "github.com/nextmicro/next/internal/testdata/helloworld"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	"google.golang.org/grpc"
 
 	"github.com/go-kratos/kratos/v2/errors"
@@ -114,7 +112,6 @@ func testClient(t *testing.T, srv *Server) {
 	}
 	// new a gRPC client
 	conn, err := DialInsecure(context.Background(),
-		&anypb.Any{},
 		WithEndpoint(u.Host),
 		WithOptions(grpc.WithBlock()),
 		WithUnaryInterceptor(

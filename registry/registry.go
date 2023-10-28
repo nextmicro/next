@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	DefaultRegistry = NewMemory()
+	DefaultRegistry = NewRegistry()
 
 	// ErrWatcherStopped error when watcher is stopped.
 	ErrWatcherStopped = errors.New("watcher stopped")
