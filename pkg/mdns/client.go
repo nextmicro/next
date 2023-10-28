@@ -110,7 +110,10 @@ func Listen(entries chan<- *ServiceEntry, exit chan struct{}) error {
 	}
 	defer client.Close()
 
-	client.setInterface(nil, true)
+	err = client.setInterface(nil, true)
+	if err != nil {
+		return err
+	}
 
 	// Start listening for response packets
 	msgCh := make(chan *dns.Msg, 32)

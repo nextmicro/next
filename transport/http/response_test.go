@@ -1,10 +1,11 @@
 package http
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -20,7 +21,9 @@ func TestResponse(t *testing.T) {
 
 	c.Response().Header().Set(HeaderServer, "echo")
 	c.Response().Header().Set(HeaderXFrameOptions, "DENY")
-	res.Write([]byte("test"))
+	n, err := res.Write([]byte("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 	assert.Equal(t, "echo", rec.Header().Get(HeaderServer))
 	assert.Equal(t, "DENY", rec.Header().Get(HeaderXFrameOptions))
 }
@@ -29,7 +32,9 @@ func TestResponse_Write_FallsBackToDefaultStatus(t *testing.T) {
 	rec := httptest.NewRecorder()
 	res := &Response{Writer: rec}
 
-	res.Write([]byte("test"))
+	n, err := res.Write([]byte("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
 
@@ -38,7 +43,9 @@ func TestResponse_Write_UsesSetResponseCode(t *testing.T) {
 	res := &Response{Writer: rec}
 
 	res.Status = http.StatusBadRequest
-	res.Write([]byte("test"))
+	n, err := res.Write([]byte("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
@@ -46,7 +53,9 @@ func TestResponse_Flush(t *testing.T) {
 	rec := httptest.NewRecorder()
 	res := &Response{Writer: rec}
 
-	res.Write([]byte("test"))
+	n, err := res.Write([]byte("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 	res.Flush()
 	assert.True(t, rec.Flushed)
 }
@@ -56,7 +65,9 @@ func TestResponse_ChangeStatusCodeBeforeWrite(t *testing.T) {
 	res := &Response{Writer: rec}
 
 	res.WriteHeader(209)
-	res.Write([]byte("test"))
+	n, err := res.Write([]byte("test"))
+	assert.NoError(t, err)
+	assert.Equal(t, 4, n)
 
 	assert.Equal(t, 209, rec.Code)
 	assert.Equal(t, "test", rec.Body.String())

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	vlog "github.com/nextmicro/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(t *testing.M) {
@@ -23,7 +24,10 @@ func TestDefaultLogger_Log(t *testing.T) {
 		"service.version", "v1.0.0",
 	)
 
-	_log.Log(level, "msg", "value1")
-	_log.Log(level, log.DefaultMessageKey, "test log")
-	_log.Log(level, "tttt", "key1", "ccc", "vvv")
+	err := _log.Log(level, "msg", "value1")
+	assert.NoError(t, err)
+	err = _log.Log(level, log.DefaultMessageKey, "test log")
+	assert.NoError(t, err)
+	err = _log.Log(level, "tttt", "key1", "ccc", "vvv")
+	assert.NoError(t, err)
 }
