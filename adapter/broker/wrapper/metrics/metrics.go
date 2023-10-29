@@ -12,32 +12,34 @@ import (
 
 const namespace = "broker"
 
-type MetricWrapper struct {
+type wrapper struct {
 	broker.Broker
 
 	opts *options
 }
 
-// NewMetricWrapper returns a metric wrapper for broker
-func NewMetricWrapper(broker broker.Broker, opts ...Option) *MetricWrapper {
-	op := &options{
-		messagingProducerMetricMillisecond: prom.NewCounter(metrics.MessagingProducerMetricRequests),
-		messagingProducerMetricRequests:    prom.NewHistogram(metrics.MessagingProducerMetricMillisecond),
-		messagingConsumerMetricMillisecond: prom.NewCounter(metrics.MessagingConsumerMetricRequests),
-		messagingConsumerMetricRequests:    prom.NewHistogram(metrics.MessagingConsumerMetricMillisecond),
-	}
-	for _, opt := range opts {
-		opt(op)
-	}
+// NewWrapper returns a metric wrapper for broker
+func NewWrapper(opts ...Option) broker.Wrapper {
+	return func(b broker.Broker) broker.Broker {
+		op := &options{
+			messagingProducerMetricMillisecond: prom.NewCounter(metrics.MessagingProducerMetricRequests),
+			messagingProducerMetricRequests:    prom.NewHistogram(metrics.MessagingProducerMetricMillisecond),
+			messagingConsumerMetricMillisecond: prom.NewCounter(metrics.MessagingConsumerMetricRequests),
+			messagingConsumerMetricRequests:    prom.NewHistogram(metrics.MessagingConsumerMetricMillisecond),
+		}
+		for _, opt := range opts {
+			opt(op)
+		}
 
-	return &MetricWrapper{
-		Broker: broker,
-		opts:   op,
+		return &wrapper{
+			Broker: b,
+			opts:   op,
+		}
 	}
 }
 
 // Publish a message to a topic
-func (w *MetricWrapper) Publish(ctx context.Context, topic string, message *broker.Message, opts ...broker.PublishOption) error {
+func (w *wrapper) Publish(ctx context.Context, topic string, message *broker.Message, opts ...broker.PublishOption) error {
 	start := time.Now()
 	err := w.Broker.Publish(ctx, topic, message, opts...)
 	var code = codes.Ok
@@ -51,7 +53,7 @@ func (w *MetricWrapper) Publish(ctx context.Context, topic string, message *brok
 }
 
 // Subscribe to a topic
-func (w *MetricWrapper) Subscribe(topic string, handler broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
+func (w *wrapper) Subscribe(topic string, handler broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
 	h := func(ctx context.Context, event broker.Event) error {
 		start := time.Now()
 		err := handler(ctx, event)

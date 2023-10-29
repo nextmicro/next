@@ -9,29 +9,31 @@ import (
 	"github.com/nextmicro/next/broker"
 )
 
-type LoggingWrapper struct {
+type wrapper struct {
 	broker.Broker
 
 	opts *options
 }
 
-// NewLoggingWrapper returns a logging wrapper for client
-func NewLoggingWrapper(broker broker.Broker, opts ...Option) *LoggingWrapper {
-	op := &options{
-		SlowThreshold: 100 * time.Millisecond,
-	}
-	for _, opt := range opts {
-		opt(op)
-	}
+// NewWrapper returns a logging wrapper for client
+func NewWrapper(opts ...Option) broker.Wrapper {
+	return func(b broker.Broker) broker.Broker {
+		op := &options{
+			SlowThreshold: 100 * time.Millisecond,
+		}
+		for _, opt := range opts {
+			opt(op)
+		}
 
-	return &LoggingWrapper{
-		Broker: broker,
-		opts:   op,
+		return &wrapper{
+			Broker: b,
+			opts:   op,
+		}
 	}
 }
 
 // Publish a message to a topic
-func (w *LoggingWrapper) Publish(ctx context.Context, topic string, message *broker.Message, opts ...broker.PublishOption) error {
+func (w *wrapper) Publish(ctx context.Context, topic string, message *broker.Message, opts ...broker.PublishOption) error {
 	start := time.Now()
 	err := w.Broker.Publish(ctx, topic, message, opts...)
 	duration := time.Since(start)
@@ -61,7 +63,7 @@ func (w *LoggingWrapper) Publish(ctx context.Context, topic string, message *bro
 }
 
 // Subscribe to a topic
-func (w *LoggingWrapper) Subscribe(topic string, handler broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
+func (w *wrapper) Subscribe(topic string, handler broker.Handler, opts ...broker.SubscribeOption) (broker.Subscriber, error) {
 	h := func(ctx context.Context, event broker.Event) error {
 		start := time.Now()
 		err := handler(ctx, event)

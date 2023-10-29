@@ -2,9 +2,12 @@ package broker
 
 import (
 	"context"
+	"strings"
 
 	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/broker/kafka"
+	"github.com/nextmicro/next/adapter/broker/wrapper/logging"
+	"github.com/nextmicro/next/adapter/broker/wrapper/metrics"
 	config "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/broker"
 	conf "github.com/nextmicro/next/config"
@@ -36,13 +39,27 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 		queueName = cfg.GetBroker().GetSubscribe().GetQueue()
 	}
 
-	broker.DefaultBroker = broker.NewMemoryBroker()
+	brokerOpts := make([]broker.Option, 0, 2)
+	brokerOpts = append(brokerOpts,
+		broker.Addrs(cfg.GetBroker().GetAddrs()...),
+		broker.Queue(queueName),
+		broker.Wrap(
+			logging.NewWrapper(
+				logging.WithAddr(strings.Join(cfg.GetBroker().GetAddrs(), ",")),
+				logging.WithQueue(queueName),
+			),
+			metrics.NewWrapper(
+				metrics.WithAddr(strings.Join(cfg.GetBroker().GetAddrs(), ",")),
+				metrics.WithQueue(queueName),
+			),
+		),
+	)
+
 	switch cfg.GetBroker().GetName() {
 	case "kafka":
-		broker.DefaultBroker = kafka.New(
-			broker.Addrs(cfg.GetBroker().GetAddrs()...),
-			broker.Queue(queueName),
-		)
+		broker.DefaultBroker = kafka.New(brokerOpts...)
+	default:
+		broker.DefaultBroker = broker.NewMemoryBroker(brokerOpts...)
 	}
 
 	loader.cfg = cfg.GetBroker()

@@ -181,8 +181,8 @@ func SubscribeDisableAutoAck() SubscribeOption {
 }
 
 // Wrap a broker as a wrapper
-func Wrap(w Wrapper) Option {
+func Wrap(w ...Wrapper) Option {
 	return func(o *Options) {
-		o.Wrappers = append(o.Wrappers, w)
+		o.Wrappers = append(o.Wrappers, w...)
 	}
 }
