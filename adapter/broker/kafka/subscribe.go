@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/nextmicro/logger"
+	"github.com/nextmicro/next/adapter/broker/kafka/otelsarama"
 	"github.com/nextmicro/next/broker"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	tracex "github.com/nextmicro/gokit/trace"
 
-	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -123,12 +123,6 @@ func (c *consumerGroupHandler) Handler(msg *sarama.ConsumerMessage, sess sarama.
 	))
 
 	defer span.End()
-
-	//for _, h := range msg.Headers {
-	//	if h != nil && string(h.Key) == _caller {
-	//		ctx = middleware.NewCallerContext(ctx,string(h.Value))
-	//	}
-	//}
 
 	p := &event{msg: &m, topic: msg.Topic, consumerMessage: msg, consumerGroup: c.consumerGroup, consumerGroupSession: sess}
 	errorHandler := c.opt.ErrorHandler

@@ -11,15 +11,15 @@ import (
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/nextmicro/logger"
+	"github.com/nextmicro/next/adapter/broker/kafka/otelsarama"
 	adapter "github.com/nextmicro/next/adapter/logger/log"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	_ "github.com/go-kratos/kratos/v2/encoding/proto"
 	tracex "github.com/nextmicro/gokit/trace"
 	b "github.com/nextmicro/next/broker"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 )
 
 func init() {
@@ -108,7 +108,7 @@ func (broker *Kafka) Connect() error {
 	broker.mutex.Unlock()
 
 	cfg := broker.getProducerConfig()
-	cfg.Version = sarama.V3_3_1_0
+	cfg.Version = sarama.V3_5_1_0
 	cfg.Producer.Return.Errors = true
 	cfg.Producer.Return.Successes = true
 	cfg.Producer.RequiredAcks = sarama.WaitForAll

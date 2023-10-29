@@ -5,7 +5,7 @@ import (
 
 	"github.com/nextmicro/next/broker"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 const (
