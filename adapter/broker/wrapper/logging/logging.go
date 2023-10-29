@@ -38,8 +38,8 @@ func (w *wrapper) Publish(ctx context.Context, topic string, message *broker.Mes
 	err := w.Broker.Publish(ctx, topic, message, opts...)
 	duration := time.Since(start)
 	fields := map[string]interface{}{
-		"kind":      "messaging",
-		"component": w.Broker.String(),
+		"kind":      "publish",
+		"component": "broker",
 		"method":    topic,
 		"duration":  timex.Duration(duration),
 		"address":   w.opts.addr,
@@ -50,13 +50,13 @@ func (w *wrapper) Publish(ctx context.Context, topic string, message *broker.Mes
 
 	log := logger.WithContext(ctx).WithFields(fields)
 	if duration > w.opts.SlowThreshold {
-		log.Info("[" + w.Broker.String() + "] client show")
+		log.Info("broker client show")
 	}
 
 	if err != nil {
-		log.Error("[" + w.Broker.String() + "] client")
+		log.Error("broker client")
 	} else {
-		log.Info("[" + w.Broker.String() + "] client")
+		log.Info("broker client")
 	}
 
 	return err
@@ -69,8 +69,8 @@ func (w *wrapper) Subscribe(topic string, handler broker.Handler, opts ...broker
 		err := handler(ctx, event)
 		duration := time.Since(start)
 		fields := map[string]interface{}{
-			"kind":      "messaging",
-			"component": w.Broker.String(),
+			"kind":      "subscribe",
+			"component": "broker",
 			"method":    topic,
 			"duration":  timex.Duration(duration),
 			"address":   w.opts.addr,
@@ -86,13 +86,13 @@ func (w *wrapper) Subscribe(topic string, handler broker.Handler, opts ...broker
 
 		log := logger.WithContext(ctx).WithFields(fields)
 		if duration > w.opts.SlowThreshold {
-			log.Info("[" + w.Broker.String() + "] server show")
+			log.Info("broker server show")
 		}
 
 		if err != nil {
-			log.Error("[" + w.Broker.String() + "] server")
+			log.Error("broker server")
 		} else {
-			log.Info("[" + w.Broker.String() + "] server")
+			log.Info("broker server")
 		}
 
 		return err
