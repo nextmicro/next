@@ -3,8 +3,9 @@ package broker_test
 import (
 	"context"
 	"fmt"
-	"github.com/nextmicro/next/broker"
 	"testing"
+
+	"github.com/nextmicro/next/broker"
 )
 
 func TestMemoryBroker(t *testing.T) {
@@ -18,6 +19,7 @@ func TestMemoryBroker(t *testing.T) {
 	count := 10
 
 	fn := func(ctx context.Context, p broker.Event) error {
+		t.Log(ctx.Value("msg"))
 		return nil
 	}
 
@@ -35,7 +37,8 @@ func TestMemoryBroker(t *testing.T) {
 			Body: []byte(`hello world`),
 		}
 
-		if err := b.Publish(context.TODO(), topic, message); err != nil {
+		ctx := context.WithValue(context.Background(), "msg", i)
+		if err := b.Publish(ctx, topic, message); err != nil {
 			t.Fatalf("Unexpected error publishing %d", i)
 		}
 	}

@@ -104,7 +104,7 @@ var (
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
 		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
-	}, []string{"kind", "addr", "destination", "group"})
+	}, []string{"kind", "addr", "destination", "queue"})
 
 	// MessagingConsumerMetricRequests  is a counter vector of requests.
 	MessagingConsumerMetricRequests = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -112,7 +112,7 @@ var (
 		Subsystem: "messaging_consumer_requests",
 		Name:      "total",
 		Help:      "The total number of processed requests",
-	}, []string{"kind", "addr", "destination", "group", "status"})
+	}, []string{"kind", "addr", "destination", "queue", "status"})
 )
 
 func init() {

@@ -110,7 +110,7 @@ func (broker *Kafka) Connect() error {
 	broker.mutex.Unlock()
 
 	cfg := broker.getProducerConfig()
-	cfg.Version = sarama.V3_2_0_0
+	cfg.Version = sarama.V3_3_1_0
 	cfg.Producer.Return.Errors = true
 	cfg.Producer.Return.Successes = true
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
