@@ -9,8 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/nextmicro/next/adapter/broker/middleware"
-
+	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/nextmicro/logger"
 	adapter "github.com/nextmicro/next/adapter/logger/log"
 	"go.opentelemetry.io/otel/codes"
@@ -36,8 +35,6 @@ type Kafka struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	clients      []sarama.Client
-	publishMs    []middleware.Middleware
-	subscribeMs  []middleware.Middleware
 	syncProducer sarama.SyncProducer
 	opt          b.Options
 }
@@ -52,19 +49,20 @@ func New(opts ...b.Option) b.Broker {
 		o(&opt)
 	}
 
-	var (
-		publishMs   []middleware.Middleware
-		subscribeMs []middleware.Middleware
-	)
-
 	ctx, cancel := context.WithCancel(opt.Context)
-	return &Kafka{
-		opt:         opt,
-		ctx:         ctx,
-		cancel:      cancel,
-		publishMs:   publishMs,
-		subscribeMs: subscribeMs,
+	k := &Kafka{
+		opt:    opt,
+		ctx:    ctx,
+		cancel: cancel,
 	}
+
+	broker := b.Broker(k)
+
+	// wrap in reverse
+	for i := len(opt.Wrappers); i > 0; i-- {
+		broker = opt.Wrappers[i-1](broker)
+	}
+	return broker
 }
 
 func (broker *Kafka) Init(opts ...b.Option) error {
@@ -173,7 +171,6 @@ func (broker *Kafka) Publish(ctx context.Context, topic string, msg *b.Message, 
 	}
 
 	var (
-		ms  []middleware.Middleware
 		opt = b.PublishOptions{
 			Context: context.Background(),
 		}
@@ -182,7 +179,6 @@ func (broker *Kafka) Publish(ctx context.Context, topic string, msg *b.Message, 
 		o(&opt)
 	}
 
-	ms = append(ms, broker.publishMs...)
 	topic = strings.ReplaceAll(topic, ".", "-")
 	bytes, err := broker.opt.Codec.Marshal(msg)
 	if err != nil {
@@ -210,13 +206,6 @@ func (broker *Kafka) Publish(ctx context.Context, topic string, msg *b.Message, 
 			partition: partition,
 			offset:    offset,
 		}, err
-	}
-
-	if userMs, ok := opt.Context.Value(publishMiddlewaresKey{}).([]middleware.Middleware); ok {
-		ms = append(ms, userMs...)
-	}
-	if len(ms) > 0 {
-		h = middleware.Chain(ms...)(h)
 	}
 
 	_, err = h(opt.Context, topic, message)
@@ -271,7 +260,6 @@ func (broker *Kafka) Subscribe(topic string, h b.Handler, opts ...b.SubscribeOpt
 
 	logger.Infof("broker [%s] queue: %s Subscribe topic: %s", broker.String(), opt.Queue, topic)
 
-	ms = append(ms, broker.subscribeMs...)
 	topic = strings.ReplaceAll(topic, ".", "-")
 	// we need to create a new client per consumer
 	client, err := broker.getSaramaClusterClient()
@@ -291,7 +279,6 @@ func (broker *Kafka) Subscribe(topic string, h b.Handler, opts ...b.SubscribeOpt
 		handler:       h,
 		subOpt:        opt,
 		opt:           broker.opt,
-		ms:            ms,
 		consumerGroup: consumerGroup,
 		ctx:           broker.ctx,
 	}

@@ -30,6 +30,9 @@ type Options struct {
 
 	PublishOptions   PublishOptions
 	SubscribeOptions SubscribeOptions
+
+	// Middleware for client
+	Wrappers []Wrapper
 }
 
 type PublishOptions struct {
@@ -174,5 +177,12 @@ func DisableAutoAck() Option {
 func SubscribeDisableAutoAck() SubscribeOption {
 	return func(o *SubscribeOptions) {
 		o.AutoAck = false
+	}
+}
+
+// Wrap a broker as a wrapper
+func Wrap(w Wrapper) Option {
+	return func(o *Options) {
+		o.Wrappers = append(o.Wrappers, w)
 	}
 }

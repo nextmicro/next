@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 
-	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/nextmicro/next/broker"
 
 	"github.com/Shopify/sarama"
@@ -68,12 +67,4 @@ func SubscribeConfig(c *sarama.Config) broker.Option {
 // StringEncoder.
 func Key(key string) broker.PublishOption {
 	return setPublishOption(publishMessageKey{}, key)
-}
-
-func PublishMiddleware(ms ...middleware.Middleware) broker.PublishOption {
-	return setPublishOption(publishMiddlewaresKey{}, ms)
-}
-
-func SubscribeMiddleware(ms ...middleware.Middleware) broker.SubscribeOption {
-	return setSubscribeOption(subscribeMiddlewaresKey{}, ms)
 }

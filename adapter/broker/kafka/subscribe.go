@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/nextmicro/logger"
-	"github.com/nextmicro/next/adapter/broker/middleware"
 	"github.com/nextmicro/next/broker"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -70,7 +69,6 @@ type consumerGroupHandler struct {
 	ctx           context.Context
 	opt           broker.Options
 	handler       broker.Handler
-	ms            []middleware.Middleware
 	subOpt        broker.SubscribeOptions
 	consumerGroup sarama.ConsumerGroup
 }
@@ -147,9 +145,6 @@ func (c *consumerGroupHandler) Handler(msg *sarama.ConsumerMessage, sess sarama.
 	h := func(ctx context.Context, topic string, req interface{}) (interface{}, error) {
 		err := c.handler(ctx, p)
 		return p, err
-	}
-	if len(c.ms) > 0 {
-		h = middleware.Chain(c.ms...)(h)
 	}
 
 	_, err := h(ctx, msg.Topic, p)

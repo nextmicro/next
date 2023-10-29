@@ -3,11 +3,12 @@ package broker
 import (
 	"context"
 	"errors"
-	maddr "github.com/nextmicro/next/pkg/addr"
-	"github.com/nextmicro/next/pkg/net"
 	"math/rand"
 	"sync"
 	"time"
+
+	maddr "github.com/nextmicro/next/pkg/addr"
+	"github.com/nextmicro/next/pkg/net"
 
 	"github.com/google/uuid"
 )
@@ -26,10 +27,19 @@ func NewMemoryBroker(opts ...Option) Broker {
 
 	rand.Seed(time.Now().UnixNano())
 
-	return &memoryBroker{
+	_memoryBroker := &memoryBroker{
 		opts:        options,
 		Subscribers: make(map[string][]*memorySubscriber),
 	}
+
+	b := Broker(_memoryBroker)
+
+	// wrap in reverse
+	for i := len(options.Wrappers); i > 0; i-- {
+		b = options.Wrappers[i-1](b)
+	}
+
+	return b
 }
 
 type memoryEvent struct {
