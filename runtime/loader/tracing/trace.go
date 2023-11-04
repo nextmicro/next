@@ -7,6 +7,7 @@ import (
 	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
+	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -30,21 +31,39 @@ func New(opts ...loader.Option) loader.Loader {
 }
 
 func (loader *Tracing) Init(...loader.Option) (err error) {
-	var cfg = config.ApplicationConfig().GetTracing()
+	var cfg = config.ApplicationConfig().GetTelemetry()
 	if cfg == nil {
-		cfg = &v1.Tracing{}
+		cfg = &v1.Telemetry{}
 	}
 	if cfg.Disable {
 		return nil
 	}
+	var exporter string
+	switch cfg.Exporter {
+	case v1.Exporter_OTLPHTTP_EXPORTER:
+		exporter = tr.KindOtlpHttp
+	case v1.Exporter_OTLPGPRC_EXPORTER:
+		exporter = tr.KindOtlpGrpc
+	case v1.Exporter_ZIPKIN_EXPORTER:
+		exporter = tr.KindZipkin
+	case v1.Exporter_FILE_EXPORTER:
+		exporter = tr.KindFile
+	default:
+		exporter = tr.KindStdout
+	}
 
 	var opts = []tr.Option{
 		tr.WithEndpoint(cfg.Endpoint),
+		tr.WithBatcher(exporter),
 		tr.WithSampler(cfg.Sampler),
+		tr.WithOtlpHeaders(cfg.GetOTLPHeaders()),
+		tr.WithOtlpHttpPath(cfg.GetOPLPHttpPath()),
 		tr.WithAttributes(
 			attribute.String("service.id", config.ApplicationConfig().GetId()),
-			semconv.ServiceNameKey.String(config.ApplicationConfig().GetName()),
-			semconv.ServiceVersionKey.String(config.ApplicationConfig().GetVersion()),
+			semconv.ServiceName(config.ApplicationConfig().GetName()),
+			semconv.ServiceVersion(config.ApplicationConfig().GetVersion()),
+			semconv.ServiceInstanceID(env.Hostname()),
+			semconv.DeploymentEnvironment(env.DeployEnvironment()),
 		),
 	}
 
@@ -80,5 +99,5 @@ func (loader *Tracing) Stop(ctx context.Context) error {
 }
 
 func (loader *Tracing) String() string {
-	return "otel"
+	return "OTEL"
 }

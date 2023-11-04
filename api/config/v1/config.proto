@@ -23,8 +23,8 @@ message Next {
   Server  server = 6;
   // logger config
   Logger  logger = 10;
-  // tracing config
-  Tracing tracing = 11;
+  // telemetry config
+  Telemetry telemetry = 11;
   // nacos config
   Nacos   nacos = 12;
   // broker config
@@ -99,14 +99,26 @@ message Registry {
   google.protobuf.Duration timeout = 3; // 注册中心超时时间
 }
 
-// tracing config
-message Tracing {
+enum Exporter {
+  UNKNOWN_EXPORTER = 0; // unknown exporter
+  OTLPHTTP_EXPORTER = 1; // otlphttp exporter
+  OTLPGPRC_EXPORTER = 2; // otlpgrpc exporter
+  STDOUT_EXPORTER = 3; // stdout exporter
+  ZIPKIN_EXPORTER = 4; // zipkin exporter
+  FILE_EXPORTER = 5; // file exporter
+}
+
+// Telemetry config
+message Telemetry {
   // disable tracing
   bool    disable = 1;
   // tracing endpoint
   string  endpoint = 2;
   // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
   double  sampler = 3;
+  Exporter exporter = 4;
+  map<string, string> OTLPHeaders = 5; // otlp headers
+  string OPLPHttpPath = 6; // otlp http path
 }
 
 // nacos config

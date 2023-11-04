@@ -15,10 +15,10 @@ const (
 )
 
 const (
-	Dev  = "dev"        // 开发环境
-	Test = "testing"    // 环境环境
-	Pre  = "pre"        // 灰度环境
-	Prod = "production" // 线上环境
+	Dev        = "dev"        // 开发环境
+	Test       = "testing"    // 环境环境
+	Staging    = "staging"    // 预发环境
+	Production = "production" // 线上环境
 )
 
 var (
@@ -86,12 +86,12 @@ func IsTest() bool {
 	return DeployEnvironment() == Test
 }
 
-// IsPre is pre environment
-func IsPre() bool {
-	return DeployEnvironment() == Pre
+// IsStaging is staging environment
+func IsStaging() bool {
+	return DeployEnvironment() == Staging
 }
 
 // IsProduction is production environment
 func IsProduction() bool {
-	return DeployEnvironment() == Prod
+	return DeployEnvironment() == Production
 }
