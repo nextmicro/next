@@ -35,7 +35,9 @@ func TestMain(t *testing.M) {
 }
 
 func TestNewLoggingWrapper(t *testing.T) {
-	b := logging.NewLoggingWrapper(broker.DefaultBroker, logging.WithResponse(true))
+	b := broker.NewMemoryBroker(
+		broker.Wrap(logging.NewWrapper()),
+	)
 
 	if err := b.Connect(); err != nil {
 		t.Fatalf("Unexpected connect error %v", err)

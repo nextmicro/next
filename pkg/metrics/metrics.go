@@ -12,7 +12,7 @@ var (
 		Namespace: DefaultNamespace,
 		Subsystem: "app",
 		Name:      "build_info",
-	}, []string{"app_id", "app_name", "app_version", "deploy_env", "go_version", "milli_version", "start_time", "build_time"})
+	}, []string{"app_id", "app_name", "app_version", "deploy_env", "go_version", "next_version", "start_time", "build_time"})
 
 	// ClientMetricMillisecond is a prometheus histogram for measuring the duration of a request.
 	ClientMetricMillisecond = prometheus.NewHistogramVec(prometheus.HistogramOpts{

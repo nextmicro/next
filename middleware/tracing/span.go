@@ -38,12 +38,12 @@ func setClientSpan(ctx context.Context, span trace.Span, request any) {
 			}
 		case transport.KindGRPC:
 			remote, _ = parseTarget(tr.Endpoint())
+			_, mAttrs := parseFullMethod(operation)
+			attrs = append(attrs, mAttrs...)
 		}
 	}
 
 	attrs = append(attrs, semconv.RPCSystemKey.String(rpcKind))
-	_, mAttrs := parseFullMethod(operation)
-	attrs = append(attrs, mAttrs...)
 	if remote != "" {
 		attrs = append(attrs, peerAttr(remote)...)
 	}
@@ -83,11 +83,11 @@ func setServerSpan(ctx context.Context, span trace.Span, request any) {
 			if p, ok := peer.FromContext(ctx); ok {
 				remote = p.Addr.String()
 			}
+			_, mAttrs := parseFullMethod(operation)
+			attrs = append(attrs, mAttrs...)
 		}
 	}
 	attrs = append(attrs, semconv.RPCSystemKey.String(rpcKind))
-	_, mAttrs := parseFullMethod(operation)
-	attrs = append(attrs, mAttrs...)
 	attrs = append(attrs, peerAttr(remote)...)
 	span.SetAttributes(attrs...)
 }

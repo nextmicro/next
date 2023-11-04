@@ -38,12 +38,11 @@ func (w *wrapper) Publish(ctx context.Context, topic string, message *broker.Mes
 	err := w.Broker.Publish(ctx, topic, message, opts...)
 	duration := time.Since(start)
 	fields := map[string]interface{}{
-		"kind":             "publish",
-		"component":        "broker",
-		"method":           topic,
-		"duration":         timex.Duration(duration),
-		"address":          w.opts.addr,
-		"messaging.system": "kafka",
+		"kind":      "publish",
+		"component": "broker",
+		"method":    topic,
+		"duration":  timex.Duration(duration),
+		"address":   w.opts.addr,
 	}
 	if err != nil {
 		fields["error"] = err
@@ -70,13 +69,12 @@ func (w *wrapper) Subscribe(topic string, handler broker.Handler, opts ...broker
 		err := handler(ctx, event)
 		duration := time.Since(start)
 		fields := map[string]interface{}{
-			"kind":             "receive",
-			"component":        "broker",
-			"method":           topic,
-			"duration":         timex.Duration(duration),
-			"address":          w.opts.addr,
-			"queue":            w.opts.queue,
-			"messaging.system": "kafka",
+			"kind":      "receive",
+			"component": "broker",
+			"method":    topic,
+			"duration":  timex.Duration(duration),
+			"address":   w.opts.addr,
+			"queue":     w.opts.queue,
 		}
 		if err != nil {
 			fields["error"] = err
