@@ -32,6 +32,9 @@ func setClientSpan(ctx context.Context, span trace.Span, request any) {
 			if ht, ok := tr.(thttp.Transporter); ok {
 				attrs = httpconv.ClientRequest(ht.Request())
 				remote = ht.Request().Host
+				attrs = append(attrs, httpconv.ServerRequest("", ht.Request())...)
+				attrs = append(attrs, semconv.HTTPRoute(operation))
+				attrs = append(attrs, semconv.URLPath(ht.Request().URL.Path))
 			}
 		case transport.KindGRPC:
 			remote, _ = parseTarget(tr.Endpoint())
@@ -73,6 +76,8 @@ func setServerSpan(ctx context.Context, span trace.Span, request any) {
 		case transport.KindHTTP:
 			if ht, ok := tr.(thttp.Transporter); ok {
 				attrs = append(attrs, httpconv.ServerRequest("", ht.Request())...)
+				attrs = append(attrs, semconv.HTTPRoute(operation))
+				attrs = append(attrs, semconv.URLPath(ht.Request().RequestURI))
 			}
 		case transport.KindGRPC:
 			if p, ok := peer.FromContext(ctx); ok {

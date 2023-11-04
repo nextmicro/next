@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -51,7 +52,7 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			if tr, ok := transport.FromClientContext(ctx); ok {
 				var span trace.Span
-				ctx, span = tracer.Start(ctx, tr.Operation(), oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+				ctx, span = tracer.Start(ctx, fmt.Sprintf("HTTP Client %s", tr.Operation()), oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 				defer span.End()
 
 				cfg.propagators.Inject(ctx, tr.RequestHeader())
@@ -119,7 +120,7 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 				ctx = baggage.ContextWithBaggage(ctx, bags)
 
 				var span trace.Span
-				ctx, span = tracer.Start(oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx), tr.Operation(), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+				ctx, span = tracer.Start(oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx), fmt.Sprintf("HTTP Server %s", tr.Operation()), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
 				defer span.End()
 
 				setServerSpan(ctx, span, req)
