@@ -33,7 +33,11 @@ func New(opts ...loader.Option) loader.Loader {
 func (loader *Tracing) Init(...loader.Option) (err error) {
 	var cfg = config.ApplicationConfig().GetTelemetry()
 	if cfg == nil {
-		cfg = &v1.Telemetry{}
+		cfg = &v1.Telemetry{
+			Exporter: tr.KindOtlpGrpc,
+			Endpoint: "127.0.0.1:4318",
+			Sampler:  1,
+		}
 	}
 	if cfg.Disable {
 		return nil
