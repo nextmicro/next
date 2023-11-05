@@ -38,18 +38,9 @@ func (loader *Tracing) Init(...loader.Option) (err error) {
 	if cfg.Disable {
 		return nil
 	}
-	var exporter string
-	switch cfg.Exporter {
-	case v1.Exporter_OTLPHTTP_EXPORTER:
-		exporter = tr.KindOtlpHttp
-	case v1.Exporter_OTLPGPRC_EXPORTER:
-		exporter = tr.KindOtlpGrpc
-	case v1.Exporter_ZIPKIN_EXPORTER:
-		exporter = tr.KindZipkin
-	case v1.Exporter_FILE_EXPORTER:
-		exporter = tr.KindFile
-	default:
-		exporter = tr.KindStdout
+	var exporter = tr.KindStdout
+	if cfg.Exporter != "" {
+		exporter = cfg.Exporter
 	}
 
 	var opts = []tr.Option{

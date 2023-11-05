@@ -76,12 +76,12 @@ message Logger {
   map<string, string> metadata = 5;
 }
 
-// config service
+// Broker config
 message Broker {
-  string         name = 1;  // broker名
-  repeated string addrs = 2;  // broker地址
-  Publish       publish = 3; // broker发布配置
-  Subscribe     subscribe = 4; // broker订阅配置
+  string         name = 1;  // broker name, eg: kafka, nsq
+  repeated string addrs = 2;  // broker address
+  Publish       publish = 3; // broker publish config
+  Subscribe     subscribe = 4; // broker subscribe config
 }
 
 // broker publish config
@@ -93,30 +93,19 @@ message Subscribe {
   bool auto_ack = 2; // auto ack
 }
 
+// Registry config
 message Registry {
-  string name = 1;   // 注册中心类型: etcd，consul
-  string addrs = 2;   // 注册中心地址，多个用逗号隔开
-  google.protobuf.Duration timeout = 3; // 注册中心超时时间
-}
-
-enum Exporter {
-  UNKNOWN_EXPORTER = 0; // unknown exporter
-  OTLPHTTP_EXPORTER = 1; // otlphttp exporter
-  OTLPGPRC_EXPORTER = 2; // otlpgrpc exporter
-  STDOUT_EXPORTER = 3; // stdout exporter
-  ZIPKIN_EXPORTER = 4; // zipkin exporter
-  FILE_EXPORTER = 5; // file exporter
+  string name = 1;   // registry name, eg: nacos, etcd, consul
+  string addrs = 2;   // registry address
+  google.protobuf.Duration timeout = 3; // registry timeout
 }
 
 // Telemetry config
 message Telemetry {
-  // disable tracing
-  bool    disable = 1;
-  // tracing endpoint
-  string  endpoint = 2;
-  // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
-  double  sampler = 3;
-  Exporter exporter = 4;
+  bool    disable = 1;   // disable tracing
+  string exporter = 2; // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file
+  string  endpoint = 3;   // tracing endpoint
+  double  sampler = 4; // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
   map<string, string> OTLPHeaders = 5; // otlp headers
   string OPLPHttpPath = 6; // otlp http path
 }
