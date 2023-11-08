@@ -46,21 +46,17 @@ func NewMemory() Registry {
 }
 
 func (r *memRegistry) ttlPrune() {
-	prune := time.NewTicker(ttlPruneTime)
-	defer prune.Stop()
-	
-	for {
-		select {
-		case <-prune.C:
-			r.Lock()
-			for name, record := range r.records {
-				if record.TTL != 0 && time.Since(record.LastSeen) > record.TTL {
-					logger.Infof("Registry TTL expired for node %s of service %s", record.ID, name)
-					delete(r.records, name)
-				}
+	prune := time.Tick(ttlPruneTime)
+
+	for range prune {
+		r.Lock()
+		for name, record := range r.records {
+			if record.TTL != 0 && time.Since(record.LastSeen) > record.TTL {
+				logger.Infof("Registry TTL expired for node %s of service %s", record.ID, name)
+				delete(r.records, name)
 			}
-			r.Unlock()
 		}
+		r.Unlock()
 	}
 }
 
