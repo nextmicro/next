@@ -9,27 +9,9 @@ import (
 	"github.com/nextmicro/next/adapter/broker/wrapper/logging"
 	"github.com/nextmicro/next/broker"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func TestMain(t *testing.M) {
-	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint())
-	if err != nil {
-		panic(err)
-	}
-
-	options := make([]sdktrace.TracerProviderOption, 0)
-	options = append(options, sdktrace.WithBatcher(exporter))
-	provider := sdktrace.NewTracerProvider(options...)
-	otel.SetTracerProvider(provider)
-
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{}, propagation.Baggage{}))
-	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
-		logger.Errorf("[otel] error: %v", err)
-	}))
 
 	t.Run()
 }

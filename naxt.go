@@ -80,6 +80,7 @@ func New(opts ...Option) (*Next, error) {
 
 	return &Next{
 		App: kratos.New(kOpts...),
+		opt: opt,
 	}, nil
 }
 

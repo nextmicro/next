@@ -9,7 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/broker/kafka/otelsarama"
 	adapter "github.com/nextmicro/next/adapter/logger/log"
@@ -195,7 +194,8 @@ func (broker *Kafka) Publish(ctx context.Context, topic string, msg *b.Message, 
 	}
 
 	tr := tracex.NewTracer(trace.SpanKindProducer)
-	ctx, span := tr.Start(opt.Context, fmt.Sprintf("KF Producer %s", message.Topic))
+	var span trace.Span
+	ctx, span = tr.Start(ctx, fmt.Sprintf("KF Producer %s", message.Topic))
 	defer span.End()
 
 	tr.Inject(ctx, otelsarama.NewProducerMessageCarrier(message))
@@ -208,7 +208,7 @@ func (broker *Kafka) Publish(ctx context.Context, topic string, msg *b.Message, 
 		}, err
 	}
 
-	_, err = h(opt.Context, topic, message)
+	_, err = h(ctx, topic, message)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -247,7 +247,6 @@ func (broker *Kafka) Subscribe(topic string, h b.Handler, opts ...b.SubscribeOpt
 	}
 
 	var (
-		ms  []middleware.Middleware
 		opt = b.SubscribeOptions{
 			Queue:   broker.opt.SubscribeOptions.Queue,
 			AutoAck: broker.opt.SubscribeOptions.AutoAck,
@@ -270,9 +269,6 @@ func (broker *Kafka) Subscribe(topic string, h b.Handler, opts ...b.SubscribeOpt
 	consumerGroup, err := sarama.NewConsumerGroupFromClient(opt.Queue, client)
 	if err != nil {
 		return nil, err
-	}
-	if userMs, ok := opt.Context.Value(subscribeMiddlewaresKey{}).([]middleware.Middleware); ok {
-		ms = append(ms, userMs...)
 	}
 
 	consumerGroupHandler := &consumerGroupHandler{

@@ -53,16 +53,16 @@ func (r *runtime) Start(ctx context.Context) error {
 }
 
 // Stop stops runtime
-func (r *runtime) Stop(ctx context.Context) error {
+func (r *runtime) Stop(ctx context.Context) (err error) {
 	// reverse stop
 	for i := len(r.options.loader) - 1; i >= 0; i-- {
 		load := r.options.loader[i]
-		if err := load.Stop(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err = load.Stop(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			err = errors.New(load.String() + ": stop failed " + err.Error())
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (r *runtime) ID() string {

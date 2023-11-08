@@ -8,6 +8,8 @@ import (
 	"github.com/nextmicro/next/broker"
 )
 
+type testKey struct{}
+
 func TestMemoryBroker(t *testing.T) {
 	b := broker.NewMemoryBroker()
 
@@ -19,7 +21,7 @@ func TestMemoryBroker(t *testing.T) {
 	count := 10
 
 	fn := func(ctx context.Context, p broker.Event) error {
-		t.Log(ctx.Value("hhh"))
+		t.Log(ctx.Value(testKey{}))
 		return nil
 	}
 
@@ -37,7 +39,7 @@ func TestMemoryBroker(t *testing.T) {
 			Body: []byte(`hello world`),
 		}
 
-		ctx := context.WithValue(context.Background(), "hhh", i)
+		ctx := context.WithValue(context.Background(), testKey{}, i)
 		if err := b.Publish(ctx, topic, message); err != nil {
 			t.Fatalf("Unexpected error publishing %d", i)
 		}

@@ -13,11 +13,10 @@ const (
 )
 
 type (
-	publishConfigKey        struct{}
-	subscribeConfigKey      struct{}
-	publishMessageKey       struct{}
-	subscribeMiddlewaresKey struct{}
-	SendMessageResponse     struct {
+	publishConfigKey    struct{}
+	subscribeConfigKey  struct{}
+	publishMessageKey   struct{}
+	SendMessageResponse struct {
 		partition int32
 		offset    int64
 	}
