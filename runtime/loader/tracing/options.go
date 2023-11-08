@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 
-	tr "github.com/nextmicro/gokit/trace"
 	"github.com/nextmicro/next/runtime/loader"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -25,19 +24,4 @@ func WithConfig(cfg Config) loader.Option {
 		}
 		o.Context = context.WithValue(o.Context, tracingKey{}, cfg)
 	}
-}
-
-func options(c Config) []tr.Option {
-	var opts []tr.Option
-	if c.Endpoint != "" {
-		opts = append(opts, tr.WithEndpoint(c.Endpoint))
-	}
-	if c.Sampler != 0 {
-		opts = append(opts, tr.WithSampler(c.Sampler))
-	}
-	if c.Batcher != "" {
-		opts = append(opts, tr.WithBatcher(c.Batcher))
-	}
-	opts = append(opts, tr.WithAttributes(c.Attributes...))
-	return opts
 }

@@ -48,7 +48,7 @@ func NewMemory() Registry {
 func (r *memRegistry) ttlPrune() {
 	prune := time.NewTicker(ttlPruneTime)
 	defer prune.Stop()
-
+	
 	for {
 		select {
 		case <-prune.C:
@@ -135,10 +135,7 @@ func (r *memRegistry) GetService(ctx context.Context, serviceName string) ([]*re
 		return nil, fmt.Errorf("service %s not found in registry", serviceName)
 	}
 
-	var instances []*registry.ServiceInstance
-	instances = []*registry.ServiceInstance{record.ServiceInstance}
-
-	return instances, nil
+	return []*registry.ServiceInstance{record.ServiceInstance}, nil
 }
 
 func (r *memRegistry) Watch(ctx context.Context, serviceName string) (registry.Watcher, error) {

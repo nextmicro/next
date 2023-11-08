@@ -59,22 +59,6 @@ type Context interface {
 	Reset(http.ResponseWriter, *http.Request)
 }
 
-type responseWriter struct {
-	code int
-	w    http.ResponseWriter
-}
-
-func (w *responseWriter) reset(res http.ResponseWriter) {
-	w.w = res
-	w.code = http.StatusOK
-}
-func (w *responseWriter) Header() http.Header        { return w.w.Header() }
-func (w *responseWriter) WriteHeader(statusCode int) { w.code = statusCode }
-func (w *responseWriter) Write(data []byte) (int, error) {
-	w.w.WriteHeader(w.code)
-	return w.w.Write(data)
-}
-
 type wrapper struct {
 	router *router
 	req    *http.Request

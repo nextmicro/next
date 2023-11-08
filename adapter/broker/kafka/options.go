@@ -13,11 +13,9 @@ const (
 )
 
 type (
-	serviceNameKey          struct{}
 	publishConfigKey        struct{}
 	subscribeConfigKey      struct{}
 	publishMessageKey       struct{}
-	publishMiddlewaresKey   struct{}
 	subscribeMiddlewaresKey struct{}
 	SendMessageResponse     struct {
 		partition int32
@@ -28,16 +26,6 @@ type (
 // setBrokerOption returns a function to setup a context with given value
 func setBrokerOption(k, v interface{}) broker.Option {
 	return func(o *broker.Options) {
-		if o.Context == nil {
-			o.Context = context.Background()
-		}
-		o.Context = context.WithValue(o.Context, k, v)
-	}
-}
-
-// setSubscribeOption returns a function to setup a context with given value
-func setSubscribeOption(k, v interface{}) broker.SubscribeOption {
-	return func(o *broker.SubscribeOptions) {
 		if o.Context == nil {
 			o.Context = context.Background()
 		}

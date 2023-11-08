@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nextmicro/logger"
 	maddr "github.com/nextmicro/next/pkg/addr"
 	"github.com/nextmicro/next/pkg/net"
 
@@ -25,7 +26,7 @@ type memoryBroker struct {
 func NewMemoryBroker(opts ...Option) Broker {
 	options := NewOptions(opts...)
 
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	_memoryBroker := &memoryBroker{
 		opts:        options,
@@ -142,7 +143,10 @@ func (m *memoryBroker) Publish(ctx context.Context, topic string, msg *Message, 
 		if err := sub.handler(ctx, p); err != nil {
 			p.err = err
 			if eh := m.opts.ErrorHandler; eh != nil {
-				eh(ctx, p)
+				err = eh(ctx, p)
+				if err != nil {
+					logger.Errorf("[memory]: error publishing: %v", err)
+				}
 				continue
 			}
 			return err

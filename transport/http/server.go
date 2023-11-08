@@ -199,18 +199,6 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
-// buildMiddlewareOptions builds the http server options.
-func (s *Server) buildMiddlewareOptions() []middleware.Middleware {
-	cfg := conf.ApplicationConfig().GetServer().GetHttp()
-	ms := make([]middleware.Middleware, 0, len(cfg.GetMiddlewares()))
-	if cfg != nil && cfg.GetMiddlewares() != nil {
-		serverMs, _ := customMiddleware.BuildMiddleware("http.server", cfg.GetMiddlewares())
-		ms = append(ms, serverMs...)
-	}
-
-	return ms
-}
-
 // applyConfig applys the config.
 func (s *Server) applyConfig() {
 	cfg := conf.ApplicationConfig().GetServer().GetHttp()
