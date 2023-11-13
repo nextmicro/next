@@ -21,8 +21,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const (
@@ -44,7 +43,7 @@ func TestConsumerConsumePartitionWithError(t *testing.T) {
 
 func BenchmarkWrapPartitionConsumer(b *testing.B) {
 	// Mock provider
-	provider := trace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 
 	mockPartitionConsumer, partitionConsumer := createMockPartitionConsumer(b)
 

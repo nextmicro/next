@@ -21,8 +21,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
-
-	oteltrace "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 func TestAsyncProducer_ConcurrencyEdgeCases(t *testing.T) {
@@ -144,7 +143,7 @@ func newSaramaConfig() *sarama.Config {
 
 func BenchmarkWrapSyncProducer(b *testing.B) {
 	// Mock provider
-	provider := oteltrace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 
 	cfg := newSaramaConfig()
 	// Mock sync producer
@@ -185,7 +184,7 @@ func BenchmarkMockSyncProducer(b *testing.B) {
 
 func BenchmarkWrapAsyncProducer(b *testing.B) {
 	// Mock provider
-	provider := oteltrace.NewNoopTracerProvider()
+	provider := noop.NewTracerProvider()
 
 	cfg := newSaramaConfig()
 	cfg.Producer.Return.Successes = true
