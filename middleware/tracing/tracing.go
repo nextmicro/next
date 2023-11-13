@@ -64,15 +64,14 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 				se := errors.FromError(err)
 				switch tr.Kind() {
 				case transport.KindHTTP:
-					if err != nil {
-						span.RecordError(err)
-						if se != nil {
-							span.SetAttributes(semconv.HTTPStatusCodeKey.Int64(int64(se.Code)))
-						}
-						span.SetStatus(codes.Error, err.Error())
-					} else {
-						span.SetStatus(codes.Ok, "OK")
+					statusCode := http.StatusOK
+					if se != nil {
+						statusCode = int(se.GetCode())
 					}
+					attrs := httpconv.HTTPAttributesFromHTTPStatusCode(statusCode)
+					spanStatus, spanMessage := httpconv.SpanStatusFromHTTPStatusCodeAndSpanKind(statusCode, oteltrace.SpanKindServer)
+					span.SetAttributes(attrs...)
+					span.SetStatus(spanStatus, spanMessage)
 				case transport.KindGRPC:
 					if err != nil {
 						if se != nil {
