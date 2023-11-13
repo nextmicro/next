@@ -3,10 +3,12 @@ package tracing
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/nextmicro/gokit/trace/httpconv"
 	configv1 "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/tracing/v1"
 	chain "github.com/nextmicro/next/middleware"
@@ -129,16 +131,14 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 				se := errors.FromError(err)
 				switch tr.Kind() {
 				case transport.KindHTTP:
-					if err != nil {
-						span.RecordError(err)
-						if se != nil {
-							span.SetAttributes(semconv.HTTPStatusCodeKey.Int64(int64(se.Code)))
-						}
-						span.SetStatus(codes.Error, err.Error())
-					} else {
-						span.SetStatus(codes.Ok, "OK")
+					statusCode := http.StatusOK
+					if se != nil {
+						statusCode = int(se.GetCode())
 					}
-
+					attrs := httpconv.HTTPAttributesFromHTTPStatusCode(statusCode)
+					spanStatus, spanMessage := httpconv.SpanStatusFromHTTPStatusCodeAndSpanKind(statusCode, oteltrace.SpanKindServer)
+					span.SetAttributes(attrs...)
+					span.SetStatus(spanStatus, spanMessage)
 				case transport.KindGRPC:
 					if err != nil {
 						span.RecordError(err)
