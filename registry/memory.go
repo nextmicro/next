@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/google/uuid"
-	"github.com/nacos-group/nacos-sdk-go/v2/common/logger"
+	"github.com/nextmicro/logger"
 )
 
 var (
