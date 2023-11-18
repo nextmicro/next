@@ -29,6 +29,8 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 )
 
+replace github.com/armon/go-metrics v0.4.1 => github.com/hashicorp/go-metrics v0.5.2
+
 require (
 	github.com/alibabacloud-go/darabonba-array v0.1.0 // indirect
 	github.com/alibabacloud-go/darabonba-encode-util v0.0.2 // indirect
