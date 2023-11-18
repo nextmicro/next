@@ -6,3 +6,4 @@ api:
 	protoc --proto_path=./api \
  	       --go_out=paths=source_relative:./api \
 	       $(API_PROTO_FILES)
+

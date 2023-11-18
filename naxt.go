@@ -44,8 +44,6 @@ func New(opts ...Option) (*Next, error) {
 		return nil, err
 	}
 
-	opt = buildOptions(config.ApplicationConfig(), opts...)
-
 	if err := run.Start(opt.Ctx); err != nil {
 		return nil, err
 	}
