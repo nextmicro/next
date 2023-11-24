@@ -20,7 +20,7 @@ var (
 		Subsystem: "client_requests",
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
-		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+		Buckets:   []float64{0.1, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 	}, []string{"kind", "callee", "method"})
 
 	// ClientMetricRequests  is a counter vector of requests.
@@ -37,7 +37,7 @@ var (
 		Subsystem: "server_requests",
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
-		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+		Buckets:   []float64{0.1, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 	}, []string{"kind", "caller", "method"})
 
 	// ServerMetricRequests  is a counter vector of requests.
@@ -62,7 +62,7 @@ var (
 		Subsystem: "db_system_requests",
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
-		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+		Buckets:   []float64{0.1, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 	}, []string{"kind", "name", "addr", "command"})
 
 	// DBSystemMetricRequests  is a counter vector of requests.
@@ -86,7 +86,7 @@ var (
 		Subsystem: "messaging_producer_requests",
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
-		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+		Buckets:   []float64{0.1, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 	}, []string{"kind", "addr", "destination"})
 
 	// MessagingProducerMetricRequests  is a counter vector of requests.
@@ -103,7 +103,7 @@ var (
 		Subsystem: "messaging_consumer_requests",
 		Name:      "duration_ms",
 		Help:      "requests duration(ms).",
-		Buckets:   []float64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
+		Buckets:   []float64{0.1, 0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000},
 	}, []string{"kind", "addr", "destination", "queue"})
 
 	// MessagingConsumerMetricRequests  is a counter vector of requests.

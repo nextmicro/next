@@ -84,8 +84,8 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 // Server wraps a server.Server with prometheus metrics.
 func Server(c *config.Middleware) (middleware.Middleware, error) {
 	options := Options{
-		requests: prom.NewCounter(metric.ClientMetricRequests),
-		seconds:  prom.NewHistogram(metric.ClientMetricMillisecond),
+		requests: prom.NewCounter(metric.ServerMetricRequests),
+		seconds:  prom.NewHistogram(metric.ServerMetricMillisecond),
 	}
 
 	if c.Options != nil {
