@@ -29,7 +29,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 )
 
-replace github.com/armon/go-metrics v0.4.1 => github.com/hashicorp/go-metrics v0.5.2
+replace github.com/armon/go-metrics v0.4.1 => github.com/hashicorp/go-metrics v0.5.3
 
 require (
 	github.com/alibabacloud-go/darabonba-array v0.1.0 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-playground/form/v4 v4.2.1 // indirect
