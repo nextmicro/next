@@ -4,27 +4,27 @@ go 1.21.0
 
 require (
 	github.com/go-kratos/aegis v0.2.0
-	github.com/go-kratos/kratos/v2 v2.7.2-0.20231113102135-421dbc7dae0f
+	github.com/go-kratos/kratos/v2 v2.7.2
 	github.com/nextmicro/gokit/timex v1.0.0
 	github.com/nextmicro/gokit/trace v1.0.7
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.21.0
 	google.golang.org/grpc v1.59.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
 	github.com/IBM/sarama v1.42.1
-	github.com/go-kratos/kratos/contrib/metrics/prometheus/v2 v2.0.0-20231116090954-1e4e37ad8735
-	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20231116090954-1e4e37ad8735
-	github.com/go-kratos/kratos/contrib/registry/etcd/v2 v2.0.0-20231116090954-1e4e37ad8735
-	github.com/google/uuid v1.4.0
+	github.com/go-kratos/kratos/contrib/metrics/prometheus/v2 v2.0.0-20230830131453-6c026bce56a9
+	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20230830131453-6c026bce56a9
+	github.com/go-kratos/kratos/contrib/registry/etcd/v2 v2.0.0-20230830131453-6c026bce56a9
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/consul/api v1.26.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.4
 	github.com/nextmicro/logger v1.0.3
 	github.com/prometheus/client_golang v1.17.0
-	go.etcd.io/etcd/client/v3 v3.5.10
+	go.etcd.io/etcd/client/v3 v3.5.11
 	go.opentelemetry.io/otel/trace v1.21.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 )
@@ -109,8 +109,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.10 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.11 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.11 // indirect
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0 // indirect
