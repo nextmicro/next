@@ -27,9 +27,6 @@ func (r *runtime) Init(opts ...Option) error {
 	}
 
 	for _, load := range r.options.loader {
-		if !load.Initialized() {
-			continue
-		}
 		if err := load.Init(); err != nil {
 			return errors.New(load.String() + ": init failed " + err.Error())
 		}

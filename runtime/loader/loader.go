@@ -27,7 +27,7 @@ func (loader *BaseLoader) Init(opts ...Option) error {
 }
 
 func (loader *BaseLoader) Initialized() bool {
-	return true
+	return false
 }
 
 func (loader *BaseLoader) Start(ctx context.Context) error {
