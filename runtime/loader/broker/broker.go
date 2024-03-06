@@ -15,9 +15,10 @@ import (
 )
 
 type wrapper struct {
-	initialized bool
-	opt         loader.Options
-	cfg         *config.Broker
+	loader.BaseLoader
+
+	opt loader.Options
+	cfg *config.Broker
 }
 
 func New(opts ...loader.Option) loader.Loader {
@@ -28,6 +29,10 @@ func New(opts ...loader.Option) loader.Loader {
 	}
 }
 
+func (loader *wrapper) Initialized() bool {
+	return loader.opt.Initialized
+}
+
 // Init options
 func (loader *wrapper) Init(opts ...loader.Option) error {
 	cfg := conf.ApplicationConfig()
@@ -35,6 +40,10 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 	var (
 		queueName = cfg.GetName()
 	)
+	if cfg.GetBroker() != nil && cfg.GetBroker().GetDisable() {
+		return nil
+	}
+
 	if cfg.GetBroker().GetSubscribe().GetQueue() != "" {
 		queueName = cfg.GetBroker().GetSubscribe().GetQueue()
 	}
@@ -63,16 +72,12 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 	}
 
 	loader.cfg = cfg.GetBroker()
-	loader.initialized = true
+	loader.opt.Initialized = true
 	return nil
 }
 
 // Start the broker
 func (loader *wrapper) Start(ctx context.Context) (err error) {
-	if !loader.initialized {
-		return
-	}
-
 	if err = broker.DefaultBroker.Connect(); err != nil {
 		logger.Errorf("Broker [%s] connect error: %v", broker.DefaultBroker.String(), err)
 		return err
@@ -82,21 +87,8 @@ func (loader *wrapper) Start(ctx context.Context) (err error) {
 	return
 }
 
-// Watch the broker
-func (loader *wrapper) Watch() error {
-	if !loader.initialized {
-		return nil
-	}
-
-	return nil
-}
-
 // Stop the broker
 func (loader *wrapper) Stop(ctx context.Context) (err error) {
-	if !loader.initialized {
-		return nil
-	}
-
 	logger.Infof("Broker [%s] Disconnected from %s", broker.DefaultBroker.String(), broker.DefaultBroker.Address())
 
 	// disconnect broker
@@ -109,5 +101,5 @@ func (loader *wrapper) Stop(ctx context.Context) (err error) {
 
 // String returns the name of broker
 func (loader *wrapper) String() string {
-	return "broker"
+	return "Broker"
 }

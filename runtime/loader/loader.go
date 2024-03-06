@@ -5,6 +5,8 @@ import (
 )
 
 type Loader interface {
+	// Initialized returns true if loader is initialized
+	Initialized() bool
 	// Init initializes loader
 	Init(opts ...Option) error
 	// Start starts loader
@@ -17,25 +19,29 @@ type Loader interface {
 	String() string
 }
 
-type Base struct {
+type BaseLoader struct {
 }
 
-func (loader *Base) Init(opts ...Option) error {
+func (loader *BaseLoader) Init(opts ...Option) error {
 	return nil
 }
 
-func (loader *Base) Start(ctx context.Context) error {
+func (loader *BaseLoader) Initialized() bool {
+	return true
+}
+
+func (loader *BaseLoader) Start(ctx context.Context) error {
 	return nil
 }
 
-func (loader *Base) Watch() error {
+func (loader *BaseLoader) Watch() error {
 	return nil
 }
 
-func (loader *Base) Stop(ctx context.Context) error {
+func (loader *BaseLoader) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (loader *Base) String() string {
+func (loader *BaseLoader) String() string {
 	return ""
 }

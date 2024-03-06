@@ -10,13 +10,12 @@ import (
 	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
 type Tracing struct {
-	initialized bool
-	provider    *tr.Tracing
-	opt         loader.Options
+	provider *tr.Tracing
+	opt      loader.Options
 }
 
 func New(opts ...loader.Option) loader.Loader {
@@ -28,6 +27,10 @@ func New(opts ...loader.Option) loader.Loader {
 	return &Tracing{
 		opt: o,
 	}
+}
+
+func (loader *Tracing) Initialized() bool {
+	return loader.opt.Initialized
 }
 
 func (loader *Tracing) Init(...loader.Option) (err error) {
@@ -51,8 +54,8 @@ func (loader *Tracing) Init(...loader.Option) (err error) {
 		tr.WithEndpoint(cfg.Endpoint),
 		tr.WithBatcher(exporter),
 		tr.WithSampler(cfg.Sampler),
-		tr.WithOtlpHeaders(cfg.GetOTLPHeaders()),
-		tr.WithOtlpHttpPath(cfg.GetOPLPHttpPath()),
+		tr.WithOtlpHeaders(cfg.GetHeaders()),
+		tr.WithOtlpHttpPath(cfg.GetHttpPath()),
 		tr.WithAttributes(
 			attribute.String("service.id", config.ApplicationConfig().GetId()),
 			semconv.ServiceName(config.ApplicationConfig().GetName()),
@@ -67,7 +70,7 @@ func (loader *Tracing) Init(...loader.Option) (err error) {
 		return err
 	}
 
-	loader.initialized = true
+	loader.opt.Initialized = true
 	logger.Infof("Loader [%s] Init success", loader.String())
 
 	return nil
@@ -82,9 +85,6 @@ func (loader *Tracing) Watch() error {
 }
 
 func (loader *Tracing) Stop(ctx context.Context) error {
-	if !loader.initialized {
-		return nil
-	}
 	if err := loader.provider.Shutdown(ctx); err != nil {
 		return err
 	}
@@ -94,5 +94,5 @@ func (loader *Tracing) Stop(ctx context.Context) error {
 }
 
 func (loader *Tracing) String() string {
-	return "OTEL"
+	return "Otel"
 }

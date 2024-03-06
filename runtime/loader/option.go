@@ -5,6 +5,7 @@ import (
 )
 
 type Options struct {
+	Initialized bool
 	// for alternative data
 	Context context.Context
 }

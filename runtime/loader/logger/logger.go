@@ -21,6 +21,7 @@ const (
 )
 
 type logger struct {
+	loader.BaseLoader
 	opt loader.Options
 	cfg *config.Logger
 }
@@ -31,6 +32,11 @@ func New(opts ...loader.Option) loader.Loader {
 	return &logger{
 		opt: *options,
 	}
+}
+
+// Initialized returns the initialized status of the loader.
+func (loader *logger) Initialized() bool {
+	return loader.opt.Initialized
 }
 
 // Init is a loader initializer.
@@ -68,12 +74,9 @@ func (loader *logger) Init(opts ...loader.Option) error {
 	nacos.NewNacos(log.DefaultLogger).SetLogger() // adapter nacos logger
 
 	loader.cfg = cfg
+	loader.opt.Initialized = true
 	log.Infof("Loader [%s] init success", loader.String())
 
-	return nil
-}
-
-func (loader *logger) Start(ctx context.Context) error {
 	return nil
 }
 
@@ -107,5 +110,5 @@ func (loader *logger) Stop(ctx context.Context) error {
 }
 
 func (loader *logger) String() string {
-	return "logger"
+	return "Logger"
 }

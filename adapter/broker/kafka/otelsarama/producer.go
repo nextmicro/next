@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -285,10 +285,10 @@ func startProducerSpan(cfg config, version sarama.KafkaVersion, msg *sarama.Prod
 
 	// Create a span.
 	attrs := []attribute.KeyValue{
-		semconv.MessagingSystem("kafka"),
+		semconv.MessagingSystemKafka,
 		attribute.Key("messaging.destination.kind").String("topic"),
 		semconv.MessagingDestinationName(msg.Topic),
-		semconv.MessagingMessagePayloadSizeBytes(msgPayloadSize(msg, version)),
+		semconv.MessagingMessageBodySize(msgPayloadSize(msg, version)),
 		semconv.MessagingOperationPublish,
 	}
 	opts := []trace.SpanStartOption{

@@ -17,10 +17,10 @@ import (
 )
 
 type wrapper struct {
-	*loader.Base
-	initialized bool
-	opt         loader.Options
-	cfg         *config.Registry
+	*loader.BaseLoader
+
+	opt loader.Options
+	cfg *config.Registry
 }
 
 func New(opts ...loader.Option) loader.Loader {
@@ -93,21 +93,17 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 		registry.DefaultRegistry = registry.NewMemory()
 	}
 
-	loader.initialized = true
+	loader.opt.Initialized = true
 	return nil
 }
 
 // Start the broker
 func (loader *wrapper) Start(ctx context.Context) (err error) {
-	if !loader.initialized {
-		return
-	}
-
 	logger.Infof("Registry [%s] Registering node: %s", loader.cfg.GetName(), conf.ApplicationConfig().GetName())
 	return
 }
 
 // String returns the name of broker
 func (loader *wrapper) String() string {
-	return "registry"
+	return "Registry"
 }

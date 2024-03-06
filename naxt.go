@@ -33,6 +33,7 @@ type Next struct {
 func New(opts ...Option) (*Next, error) {
 	opt := buildOptions(config.ApplicationConfig(), opts...)
 
+	// register runtime
 	run := runtime.NewRuntime()
 	if err := run.Init(
 		runtime.ID(opt.ID),
@@ -44,11 +45,13 @@ func New(opts ...Option) (*Next, error) {
 		return nil, err
 	}
 
+	// start runtime
 	if err := run.Start(opt.Ctx); err != nil {
 		return nil, err
 	}
 
 	opt = buildOptions(config.ApplicationConfig(), opts...)
+	// register runtime stop
 	opt.AfterStop = append(opt.AfterStop, run.Stop)
 
 	kOpts := []kratos.Option{

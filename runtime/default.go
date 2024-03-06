@@ -27,6 +27,9 @@ func (r *runtime) Init(opts ...Option) error {
 	}
 
 	for _, load := range r.options.loader {
+		if !load.Initialized() {
+			continue
+		}
 		if err := load.Init(); err != nil {
 			return errors.New(load.String() + ": init failed " + err.Error())
 		}
@@ -38,6 +41,9 @@ func (r *runtime) Init(opts ...Option) error {
 // Start runtime start
 func (r *runtime) Start(ctx context.Context) error {
 	for _, load := range r.options.loader {
+		if !load.Initialized() {
+			continue
+		}
 		err := load.Start(ctx)
 		if err != nil {
 			return errors.New(load.String() + ": start failed " + err.Error())
@@ -57,6 +63,9 @@ func (r *runtime) Stop(ctx context.Context) (err error) {
 	// reverse stop
 	for i := len(r.options.loader) - 1; i >= 0; i-- {
 		load := r.options.loader[i]
+		if !load.Initialized() {
+			continue
+		}
 		if err = load.Stop(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			err = errors.New(load.String() + ": stop failed " + err.Error())
 		}

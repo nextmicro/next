@@ -12,7 +12,7 @@ import (
 	"github.com/nextmicro/gokit/trace/httpconv"
 	thttp "github.com/nextmicro/next/transport/http"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/proto"
@@ -110,8 +110,8 @@ func peerAttr(addr string) []attribute.KeyValue {
 	var attr []attribute.KeyValue
 	if ip := net.ParseIP(host); ip != nil {
 		attr = []attribute.KeyValue{
-			semconv.NetSockPeerAddrKey.String(host),
-			semconv.NetSockPeerPortKey.Int(port),
+			semconv.NetworkPeerAddressKey.String(host),
+			semconv.NetworkPeerPortKey.Int(port),
 		}
 	} else {
 		attr = []attribute.KeyValue{

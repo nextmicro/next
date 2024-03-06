@@ -118,6 +118,7 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 		constant.WithNamespaceId(cfg.GetNamespaces()),
 		constant.WithNotLoadCacheAtStart(true),
 		constant.WithLogLevel(cfg.LogLevel),
+		constant.WithOpenKMS(false),
 	)
 	client, err := clients.NewConfigClient(
 		vo.NacosClientParam{

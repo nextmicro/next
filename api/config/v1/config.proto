@@ -78,10 +78,11 @@ message Logger {
 
 // Broker config
 message Broker {
-  string         name = 1;  // broker name, eg: kafka, nsq
-  repeated string addrs = 2;  // broker address
-  Publish       publish = 3; // broker publish config
-  Subscribe     subscribe = 4; // broker subscribe config
+  bool    disable = 1;   // disable tracing
+  string         name = 2;  // broker name, eg: kafka, nsq
+  repeated string addrs = 3;  // broker address
+  Publish       publish = 4; // broker publish config
+  Subscribe     subscribe = 5; // broker subscribe config
 }
 
 // broker publish config
@@ -106,8 +107,8 @@ message Telemetry {
   string exporter = 2; // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file
   string  endpoint = 3;   // tracing endpoint
   double  sampler = 4; // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
-  map<string, string> OTLPHeaders = 5; // otlp headers
-  string OPLPHttpPath = 6; // otlp http path
+  map<string, string> headers = 5; // otlp headers
+  string http_path = 6; // otlp http path
 }
 
 // nacos config
