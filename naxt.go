@@ -48,9 +48,8 @@ func New(opts ...Option) (*Next, error) {
 		return nil, err
 	}
 
-	opt.AfterStop = append(opt.AfterStop, run.Stop)
-
 	opt = buildOptions(config.ApplicationConfig(), opts...)
+	opt.AfterStop = append(opt.AfterStop, run.Stop)
 
 	kOpts := []kratos.Option{
 		kratos.ID(opt.ID),
