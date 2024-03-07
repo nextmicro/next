@@ -2,6 +2,8 @@ package http
 
 import (
 	"net/http"
+	"net/url"
+	//urlpkg "net/url"
 )
 
 // CallOption configures a Call before it starts or extracts information from
@@ -21,6 +23,7 @@ type callInfo struct {
 	operation     string
 	pathTemplate  string
 	headerCarrier *http.Header
+	url           *url.URL
 }
 
 // EmptyCallOption does not alter the Call configuration.
@@ -112,4 +115,21 @@ func (o HeaderCallOption) after(_ *callInfo, cs *csAttempt) {
 	if cs.res != nil && cs.res.Header != nil {
 		*o.header = cs.res.Header
 	}
+}
+
+// URL returns a CallOptions that retrieves the http response header
+func URL(v string) CallOption {
+	u, _ := url.Parse(v)
+	return URLCallOption{URL: u}
+}
+
+// URLCallOption is set url for client call
+type URLCallOption struct {
+	EmptyCallOption
+	URL *url.URL
+}
+
+func (o URLCallOption) before(c *callInfo) error {
+	c.url = o.URL
+	return nil
 }

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+
 	"net"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/registry"
 	"github.com/nextmicro/next/runtime/loader"
+	"github.com/pkg/errors"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -35,6 +37,11 @@ func New(opts ...loader.Option) loader.Loader {
 func (loader *wrapper) Init(opts ...loader.Option) error {
 	cfg := conf.ApplicationConfig()
 	loader.cfg = cfg.GetRegistry()
+	if loader.cfg == nil {
+		loader.cfg = &config.Registry{
+			Name: "memory",
+		}
+	}
 
 	// check if there are any addrs
 	var addrs []string
@@ -43,7 +50,8 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 	for _, address := range strings.Split(cfg.GetRegistry().GetAddrs(), ",") {
 		// check we have a port
 		addr, port, err := net.SplitHostPort(address)
-		if ae, ok := err.(*net.AddrError); ok && ae.Err == "missing port in address" {
+		var ae *net.AddrError
+		if errors.As(err, &ae) && ae.Err == "missing port in address" {
 			port = "8500"
 			addr = address
 			addrs = append(addrs, net.JoinHostPort(addr, port))
@@ -62,12 +70,12 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 		// new consul client
 		client, err := api.NewClient(_config)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		// test the client
 		_, err = client.Agent().Host()
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		// new reg with consul client
@@ -79,17 +87,12 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 			Endpoints: addrs,
 		})
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		// new reg with etcd client
 		reg := etcd.New(client)
 		registry.DefaultRegistry = reg
 	default:
-		if loader.cfg == nil {
-			loader.cfg = &config.Registry{
-				Name: "memory",
-			}
-		}
 		registry.DefaultRegistry = registry.NewMemory()
 	}
 
@@ -97,13 +100,13 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 	return nil
 }
 
-// Start the broker
+// Start the registry
 func (loader *wrapper) Start(ctx context.Context) (err error) {
 	logger.Infof("Registry [%s] Registering node: %s", loader.cfg.GetName(), conf.ApplicationConfig().GetName())
 	return
 }
 
-// String returns the name of broker
+// String returns the name of registry
 func (loader *wrapper) String() string {
 	return "Registry"
 }

@@ -28,6 +28,10 @@ var (
 	nextConfig *v1.Next
 )
 
+func init() {
+	nextConfig = &v1.Next{}
+}
+
 type Config struct {
 	kConfig.Config
 

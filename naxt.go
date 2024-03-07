@@ -2,12 +2,12 @@ package next
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"syscall"
 	"time"
 
 	prom "github.com/go-kratos/kratos/contrib/metrics/prometheus/v2"
-	v1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/pkg/env"
 	metric "github.com/nextmicro/next/pkg/metrics"
@@ -31,26 +31,21 @@ type Next struct {
 
 // New create an application lifecycle manager.
 func New(opts ...Option) (*Next, error) {
-	opt := buildOptions(config.ApplicationConfig(), opts...)
+	opt := buildOptions(opts...)
 
 	// register runtime
 	run := runtime.NewRuntime()
 	if err := run.Init(
-		runtime.ID(opt.ID),
-		runtime.Name(opt.Name),
-		runtime.Version(opt.Version),
-		runtime.Metadata(opt.Metadata),
 		runtime.Loader(opt.Loader...),
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("runtime init error: %w", err)
 	}
 
 	// start runtime
 	if err := run.Start(opt.Ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("runtime start error: %w", err)
 	}
 
-	opt = buildOptions(config.ApplicationConfig(), opts...)
 	// register runtime stop
 	opt.AfterStop = append(opt.AfterStop, run.Stop)
 
@@ -80,14 +75,34 @@ func New(opts ...Option) (*Next, error) {
 		kOpts = append(kOpts, kratos.AfterStop(afterStop))
 	}
 
-	return &Next{
+	next := &Next{
 		App: kratos.New(kOpts...),
 		opt: opt,
-	}, nil
+	}
+
+	// init metrics
+	next.initMetrics()
+
+	return next, nil
+}
+
+func (app *Next) initMetrics() {
+	// build app metrics.
+	prom.NewGauge(metric.BuildInfoGauge).With(
+		app.ID(),
+		app.Name(),
+		app.Version(),
+		env.DeployEnvironment(),
+		env.GoVersion(),
+		env.AppVersion(),
+		env.StartTime(),
+		env.BuildTime(),
+	).Set(float64(time.Now().UnixNano() / 1e6))
 }
 
 // buildOptions build options
-func buildOptions(cfg *v1.Next, opts ...Option) Options {
+func buildOptions(options ...Option) Options {
+	var opts []Option
 	opt := Options{
 		Ctx:              context.Background(),
 		Sigs:             []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL},
@@ -95,49 +110,25 @@ func buildOptions(cfg *v1.Next, opts ...Option) Options {
 		RegistrarTimeout: 10 * time.Second,
 		StopTimeout:      10 * time.Second,
 	}
+
+	c := config.ApplicationConfig()
+	if c.GetId() != "" {
+		opts = append(opts, ID(c.GetId()))
+	}
+	if c.GetName() != "" {
+		opts = append(opts, Name(c.GetName()))
+	}
+	if c.GetVersion() != "" {
+		opts = append(opts, Version(c.GetVersion()))
+	}
+	if c.GetMetadata() != nil {
+		opts = append(opts, Metadata(c.GetMetadata()))
+	}
+	opts = append(opts, options...)
+
 	for _, o := range opts {
 		o(&opt)
 	}
-
-	if cfg != nil {
-		if opt.ID == "" && cfg.GetId() != "" {
-			opt.ID = cfg.GetId()
-		}
-		if opt.Name == "" && cfg.GetName() != "" {
-			opt.Name = cfg.GetName()
-		}
-		if opt.Version == "" && cfg.GetVersion() != "" {
-			opt.Version = cfg.GetVersion()
-		}
-		if opt.Metadata == nil && cfg.GetMetadata() != nil {
-			opt.Metadata = cfg.GetMetadata()
-		}
-	}
-
-	if cfg.GetId() == "" && opt.ID != "" {
-		cfg.Id = opt.ID
-	}
-	if cfg.GetName() == "" && opt.Name != "" {
-		cfg.Name = opt.Name
-	}
-	if cfg.GetVersion() == "" && opt.Version != "" {
-		cfg.Version = opt.Version
-	}
-	if cfg.GetMetadata() == nil && opt.Metadata != nil {
-		cfg.Metadata = opt.Metadata
-	}
-
-	// build app metrics.
-	prom.NewGauge(metric.BuildInfoGauge).With(
-		cfg.GetId(),
-		cfg.GetName(),
-		cfg.GetVersion(),
-		env.DeployEnvironment(),
-		env.GoVersion(),
-		env.AppVersion(),
-		env.StartTime(),
-		env.BuildTime(),
-	).Set(float64(time.Now().UnixNano() / 1e6))
 
 	return opt
 }

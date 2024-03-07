@@ -86,6 +86,13 @@ func TestHeader(t *testing.T) {
 	}
 }
 
+func TestURL(t *testing.T) {
+	url := "http://localhost:8080/aa.bb"
+	if !reflect.DeepEqual(URL(url).(URLCallOption).URL.String(), url) {
+		t.Errorf("want: %s,got: %s", url, URL(url).(URLCallOption).URL.String())
+	}
+}
+
 func TestHeaderCallOption_before(t *testing.T) {
 	h := http.Header{"A": []string{"123"}}
 	c := &callInfo{}

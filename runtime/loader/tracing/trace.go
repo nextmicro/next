@@ -5,10 +5,10 @@ import (
 
 	tr "github.com/nextmicro/gokit/trace"
 	"github.com/nextmicro/logger"
-	"github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/pkg/env"
 	"github.com/nextmicro/next/runtime/loader"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
@@ -35,24 +35,13 @@ func (loader *Tracing) Initialized() bool {
 
 func (loader *Tracing) Init(...loader.Option) (err error) {
 	var cfg = config.ApplicationConfig().GetTelemetry()
-	if cfg == nil {
-		cfg = &v1.Telemetry{
-			Exporter: tr.KindOtlpGrpc,
-			Endpoint: "127.0.0.1:4318",
-			Sampler:  1,
-		}
-	}
-	if cfg.Disable {
+	if cfg == nil || cfg.Disable {
 		return nil
-	}
-	var exporter = tr.KindStdout
-	if cfg.Exporter != "" {
-		exporter = cfg.Exporter
 	}
 
 	var opts = []tr.Option{
 		tr.WithEndpoint(cfg.Endpoint),
-		tr.WithBatcher(exporter),
+		tr.WithBatcher(cfg.Exporter),
 		tr.WithSampler(cfg.Sampler),
 		tr.WithOtlpHeaders(cfg.GetHeaders()),
 		tr.WithOtlpHttpPath(cfg.GetHttpPath()),
@@ -67,16 +56,16 @@ func (loader *Tracing) Init(...loader.Option) (err error) {
 
 	loader.provider, err = tr.New(opts...)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	loader.opt.Initialized = true
-	logger.Infof("Loader [%s] Init success", loader.String())
 
 	return nil
 }
 
 func (loader *Tracing) Start(ctx context.Context) error {
+	logger.Infof("OTEL [%s] Start success", config.ApplicationConfig().GetTelemetry().Exporter)
 	return nil
 }
 
@@ -86,13 +75,14 @@ func (loader *Tracing) Watch() error {
 
 func (loader *Tracing) Stop(ctx context.Context) error {
 	if err := loader.provider.Shutdown(ctx); err != nil {
-		return err
+		logger.Errorf("OTEL [%s] Stop error: %s", config.ApplicationConfig().GetTelemetry().Exporter, err.Error())
+		return errors.WithStack(err)
 	}
 
-	logger.Infof("Loader [%s] Stop success", loader.String())
+	logger.Infof("OTEL [%s] Stop success", config.ApplicationConfig().GetTelemetry().Exporter)
 	return nil
 }
 
 func (loader *Tracing) String() string {
-	return "Otel"
+	return "otel"
 }

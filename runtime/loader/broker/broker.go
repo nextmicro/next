@@ -8,17 +8,16 @@ import (
 	"github.com/nextmicro/next/adapter/broker/kafka"
 	"github.com/nextmicro/next/adapter/broker/wrapper/logging"
 	"github.com/nextmicro/next/adapter/broker/wrapper/metrics"
-	config "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/broker"
 	conf "github.com/nextmicro/next/config"
 	"github.com/nextmicro/next/runtime/loader"
+	"github.com/pkg/errors"
 )
 
 type wrapper struct {
 	loader.BaseLoader
 
 	opt loader.Options
-	cfg *config.Broker
 }
 
 func New(opts ...loader.Option) loader.Loader {
@@ -35,43 +34,45 @@ func (loader *wrapper) Initialized() bool {
 
 // Init options
 func (loader *wrapper) Init(opts ...loader.Option) error {
-	cfg := conf.ApplicationConfig()
-
 	var (
+		cfg       = conf.ApplicationConfig()
+		brokerCfg = cfg.GetBroker()
 		queueName = cfg.GetName()
 	)
-	if cfg.GetBroker() != nil && cfg.GetBroker().GetDisable() {
+	if brokerCfg == nil || brokerCfg.GetDisable() {
 		return nil
 	}
+	if len(brokerCfg.GetAddrs()) == 0 {
+		return errors.New("missing broker addrs in config file")
+	}
 
-	if cfg.GetBroker().GetSubscribe().GetQueue() != "" {
-		queueName = cfg.GetBroker().GetSubscribe().GetQueue()
+	if brokerCfg.GetSubscribe().GetQueue() != "" {
+		queueName = brokerCfg.GetSubscribe().GetQueue()
 	}
 
 	brokerOpts := make([]broker.Option, 0, 2)
 	brokerOpts = append(brokerOpts,
-		broker.Addrs(cfg.GetBroker().GetAddrs()...),
+		broker.Addrs(brokerCfg.GetAddrs()...),
 		broker.Queue(queueName),
 		broker.Wrap(
 			logging.NewWrapper(
-				logging.WithAddr(strings.Join(cfg.GetBroker().GetAddrs(), ",")),
+				logging.WithAddr(strings.Join(brokerCfg.GetAddrs(), ",")),
 				logging.WithQueue(queueName),
 			),
 			metrics.NewWrapper(
-				metrics.WithAddr(strings.Join(cfg.GetBroker().GetAddrs(), ",")),
+				metrics.WithAddr(strings.Join(brokerCfg.GetAddrs(), ",")),
 				metrics.WithQueue(queueName),
 			),
 		),
 	)
 
-	switch cfg.GetBroker().GetName() {
+	switch brokerCfg.GetName() {
 	case "kafka":
 		broker.DefaultBroker = kafka.New(brokerOpts...)
 	default:
 		broker.DefaultBroker = broker.NewMemoryBroker(brokerOpts...)
 	}
 
-	loader.cfg = cfg.GetBroker()
 	loader.opt.Initialized = true
 	return nil
 }
@@ -80,7 +81,7 @@ func (loader *wrapper) Init(opts ...loader.Option) error {
 func (loader *wrapper) Start(ctx context.Context) (err error) {
 	if err = broker.DefaultBroker.Connect(); err != nil {
 		logger.Errorf("Broker [%s] connect error: %v", broker.DefaultBroker.String(), err)
-		return err
+		return errors.WithStack(err)
 	}
 
 	logger.Infof("Broker [%s] Connected to %s", broker.DefaultBroker.String(), broker.DefaultBroker.Address())
@@ -89,12 +90,13 @@ func (loader *wrapper) Start(ctx context.Context) (err error) {
 
 // Stop the broker
 func (loader *wrapper) Stop(ctx context.Context) (err error) {
-	logger.Infof("Broker [%s] Disconnected from %s", broker.DefaultBroker.String(), broker.DefaultBroker.Address())
-
 	// disconnect broker
 	if err = broker.DefaultBroker.Disconnect(); err != nil {
 		logger.Errorf("Broker [%s] disconnect error: %v", broker.DefaultBroker.String(), err)
+		return errors.WithStack(err)
 	}
+
+	logger.Infof("Broker [%s] Disconnected from %s", broker.DefaultBroker.String(), broker.DefaultBroker.Address())
 
 	return
 }

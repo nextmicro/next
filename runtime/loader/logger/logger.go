@@ -41,47 +41,74 @@ func (loader *logger) Initialized() bool {
 
 // Init is a loader initializer.
 func (loader *logger) Init(opts ...loader.Option) error {
-	for _, opt := range opts {
-		opt(&loader.opt)
-	}
-
-	cfg := conf.ApplicationConfig().GetLogger()
-	if cfg == nil {
-		cfg = &config.Logger{
+	cfg := conf.ApplicationConfig()
+	logCfg := cfg.GetLogger()
+	if logCfg == nil {
+		logCfg = &config.Logger{
 			Level:   "info",
 			Console: true,
 			File:    false,
 		}
 	}
-	if cfg.GetMetadata() == nil {
-		cfg.Metadata = map[string]string{
-			"app_id":      conf.ApplicationConfig().GetId(),
-			"app_name":    conf.ApplicationConfig().GetName(),
-			"app_version": conf.ApplicationConfig().GetVersion(),
-			"env":         env.DeployEnvironment(),
-			"instance_id": env.Hostname(),
-		}
+
+	metadata := map[string]string{
+		"app_id":      conf.ApplicationConfig().GetId(),
+		"app_name":    conf.ApplicationConfig().GetName(),
+		"app_version": conf.ApplicationConfig().GetVersion(),
+		"env":         env.DeployEnvironment(),
+		"instance_id": env.Hostname(),
+	}
+	cfg.Metadata = mergeMap(metadata, cfg.GetMetadata())
+
+	if logCfg.Path == "" && env.DeployEnvironment() == env.Dev {
+		logCfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
+	} else if logCfg.Path == "" {
+		logCfg.Path = fmt.Sprintf(loggerPath, conf.ApplicationConfig().GetName())
 	}
 
-	if cfg.Path == "" && env.DeployEnvironment() == env.Dev {
-		cfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
-	} else if cfg.Path == "" {
-		cfg.Path = fmt.Sprintf(loggerPath, conf.ApplicationConfig().GetName())
-	}
+	log.DefaultLogger = log.New(options(logCfg)...) // adapter logger
+	kratos.New(log.DefaultLogger).SetLogger()       // adapter kratos logger
+	nacos.NewNacos(log.DefaultLogger).SetLogger()   // adapter nacos logger
 
-	log.DefaultLogger = log.New(options(cfg)...)  // adapter logger
-	kratos.New(log.DefaultLogger).SetLogger()     // adapter kratos logger
-	nacos.NewNacos(log.DefaultLogger).SetLogger() // adapter nacos logger
-
-	loader.cfg = cfg
+	loader.cfg = logCfg
 	loader.opt.Initialized = true
 	log.Infof("Loader [%s] init success", loader.String())
 
 	return nil
 }
 
+// 两个 map 合并
+func mergeMap(m1, m2 map[string]string) map[string]string {
+	for k, v := range m2 {
+		m1[k] = v
+	}
+	return m1
+}
+
+func options(c *config.Logger) []log.Option {
+	var opts []log.Option
+	if c.Path != "" {
+		opts = append(opts, log.WithPath(c.Path))
+	}
+	if c.Level != "" {
+		opts = append(opts, log.WithLevel(log.ParseLevel(c.Level)))
+	}
+	if c.File {
+		opts = append(opts, log.WithMode(log.FileMode))
+	}
+	md := make(map[string]interface{})
+	for k, v := range c.Metadata {
+		md[k] = v
+	}
+	if len(md) > 0 {
+		opts = append(opts, log.Fields(md))
+	}
+
+	return opts
+}
+
 func (loader *logger) Watch() error {
-	err := conf.Watch(loader.String(), func(key string, value kconfig.Value) {
+	err := conf.Watch("logger", func(key string, value kconfig.Value) {
 		var cfg *config.Logger
 		log.Info("logger config changed")
 
@@ -104,8 +131,8 @@ func (loader *logger) Watch() error {
 }
 
 func (loader *logger) Stop(ctx context.Context) error {
-	_ = log.DefaultLogger.Sync()
 	log.Infof("Loader [%s] stop success", loader.String())
+	_ = log.DefaultLogger.Sync()
 	return nil
 }
 

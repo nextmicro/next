@@ -176,8 +176,9 @@ type Client struct {
 }
 
 // NewClient returns an HTTP client.
-func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
-	options := clientOptions{
+func NewClient(ctx context.Context, options ...ClientOption) (*Client, error) {
+	var opts []ClientOption
+	opt := clientOptions{
 		ctx:          ctx,
 		timeout:      2000 * time.Millisecond,
 		encoder:      DefaultRequestEncoder,
@@ -186,57 +187,61 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		transport:    http.DefaultTransport,
 		subsetSize:   25,
 	}
-	options.applyConfig()
+	if opt.cfg != nil && opt.cfg.GetTimeout().AsDuration() > 0 {
+		opts = append(opts, WithTimeout(opt.cfg.GetTimeout().AsDuration()))
+	}
+	if opt.cfg.GetEndpoint() != "" {
+		opts = append(opts, WithEndpoint(opt.cfg.GetEndpoint()))
+	}
+	opts = append(opts, options...)
 	for _, o := range opts {
-		o(&options)
+		o(&opt)
 	}
 
-	if options.tlsConf != nil {
-		if tr, ok := options.transport.(*http.Transport); ok {
-			tr.TLSClientConfig = options.tlsConf
+	if opt.tlsConf != nil {
+		if tr, ok := opt.transport.(*http.Transport); ok {
+			tr.TLSClientConfig = opt.tlsConf
 		}
 	}
-	insecure := options.tlsConf == nil
-	target, err := parseTarget(options.endpoint, insecure)
-	if err != nil {
-		return nil, err
+	insecure := opt.tlsConf == nil
+
+	var (
+		err    error
+		target *Target
+	)
+	if opt.endpoint != "" {
+		target, err = parseTarget(opt.endpoint, insecure)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	selectorBuild := selector.GlobalSelector().Build()
 	var r *resolver
-	if options.discovery != nil {
+	if opt.discovery != nil {
 		if target.Scheme == "discovery" {
-			if r, err = newResolver(ctx, options.discovery, target, selectorBuild, options.block, insecure, options.subsetSize); err != nil {
-				return nil, fmt.Errorf("[http client] new resolver failed!err: %v", options.endpoint)
+			if r, err = newResolver(ctx, opt.discovery, target, selectorBuild, opt.block, insecure, opt.subsetSize); err != nil {
+				return nil, fmt.Errorf("[http client] new resolver failed!err: %v", opt.endpoint)
 			}
-		} else if _, _, err = host.ExtractHostPort(options.endpoint); err != nil {
-			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", options.endpoint)
+		} else if _, _, err = host.ExtractHostPort(opt.endpoint); err != nil {
+			return nil, fmt.Errorf("[http client] invalid endpoint format: %v", opt.endpoint)
 		}
 	}
 
 	client := &Client{
-		opts:     options,
+		opts:     opt,
 		target:   target,
 		insecure: insecure,
 		resolver: r,
 		cc: &http.Client{
-			Timeout:   options.timeout,
-			Transport: options.transport,
+			Timeout:   opt.timeout,
+			Transport: opt.transport,
 		},
 		selector: selectorBuild,
 	}
 	client.buildMiddlewareChain()
 
 	return client, nil
-}
-
-// applyConfig applys the config.
-func (options *clientOptions) applyConfig() {
-	if options.cfg.GetTimeout().AsDuration() > 0 {
-		options.timeout = options.cfg.GetTimeout().AsDuration()
-	}
-	if options.cfg.GetEndpoint() != "" {
-		options.endpoint = options.cfg.GetEndpoint()
-	}
 }
 
 // buildMiddlewareChain builds the middleware chain.
@@ -274,8 +279,16 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args inte
 		contentType = c.contentType
 		body = bytes.NewReader(data)
 	}
-	url := fmt.Sprintf("%s://%s%s", client.target.Scheme, client.target.Authority, path)
-	req, err := http.NewRequest(method, url, body)
+
+	var url = path
+	if client.target != nil {
+		url = fmt.Sprintf("%s://%s%s", client.target.Scheme, client.target.Authority, path)
+	}
+	if c.url != nil {
+		url = c.url.String()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return err
 	}

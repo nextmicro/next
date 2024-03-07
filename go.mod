@@ -23,6 +23,7 @@ require (
 	github.com/hashicorp/consul/api v1.26.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
 	github.com/nextmicro/logger v1.0.3
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	go.etcd.io/etcd/client/v3 v3.5.11
 	go.opentelemetry.io/otel/trace v1.24.0
@@ -96,7 +97,6 @@ require (
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
 	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
