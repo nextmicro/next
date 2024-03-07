@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nextmicro/next/internal/endpoint"
-
 	"github.com/google/uuid"
+	"github.com/nextmicro/next/internal/endpoint"
 
 	"github.com/go-kratos/aegis/subset"
 	"github.com/go-kratos/kratos/v2/log"
@@ -57,7 +56,7 @@ type resolver struct {
 func newResolver(ctx context.Context, discovery registry.Discovery, target *Target,
 	rebalancer selector.Rebalancer, block, insecure bool, subsetSize int,
 ) (*resolver, error) {
-	// this is new resovler
+	// this is new resolver
 	watcher, err := discovery.Watch(ctx, target.Endpoint)
 	if err != nil {
 		return nil, err
