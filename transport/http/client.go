@@ -14,7 +14,6 @@ import (
 	"github.com/nextmicro/next/internal/host"
 	"github.com/nextmicro/next/internal/httputil"
 	chain "github.com/nextmicro/next/middleware"
-	discov "github.com/nextmicro/next/registry"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -170,7 +169,7 @@ func WithConfig(cfg *anypb.Any) ClientOption {
 type Client struct {
 	opts     clientOptions
 	target   *Target
-	r        *resolver
+	resolver *resolver
 	cc       *http.Client
 	insecure bool
 	selector selector.Selector
@@ -180,7 +179,6 @@ type Client struct {
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	options := clientOptions{
 		ctx:          ctx,
-		discovery:    discov.DefaultRegistry,
 		timeout:      2000 * time.Millisecond,
 		encoder:      DefaultRequestEncoder,
 		decoder:      DefaultResponseDecoder,
@@ -188,10 +186,10 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		transport:    http.DefaultTransport,
 		subsetSize:   25,
 	}
+	options.applyConfig()
 	for _, o := range opts {
 		o(&options)
 	}
-	options.applyConfig()
 
 	if options.tlsConf != nil {
 		if tr, ok := options.transport.(*http.Transport); ok {
@@ -219,7 +217,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		opts:     options,
 		target:   target,
 		insecure: insecure,
-		r:        r,
+		resolver: r,
 		cc: &http.Client{
 			Timeout:   options.timeout,
 			Transport: options.transport,
@@ -284,6 +282,7 @@ func (client *Client) Invoke(ctx context.Context, method, path string, args inte
 	if c.headerCarrier != nil {
 		req.Header = *c.headerCarrier
 	}
+
 	if contentType != "" {
 		req.Header.Set("Content-Type", c.contentType)
 	}
@@ -346,7 +345,8 @@ func (client *Client) Do(req *http.Request, opts ...CallOption) (*http.Response,
 
 func (client *Client) do(req *http.Request) (*http.Response, error) {
 	var done func(context.Context, selector.DoneInfo)
-	if client.r != nil {
+	// if resolver is not nil, use resolver to select node
+	if client.resolver != nil {
 		var (
 			err  error
 			node selector.Node
@@ -377,8 +377,8 @@ func (client *Client) do(req *http.Request) (*http.Response, error) {
 
 // Close tears down the Transport and all underlying connections.
 func (client *Client) Close() error {
-	if client.r != nil {
-		return client.r.Close()
+	if client.resolver != nil {
+		return client.resolver.Close()
 	}
 	return nil
 }
