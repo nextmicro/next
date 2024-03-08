@@ -54,7 +54,16 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			if tr, ok := transport.FromClientContext(ctx); ok {
 				var span trace.Span
-				ctx, span = tracer.Start(ctx, fmt.Sprintf("HTTP Client %s", tr.Operation()), oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+
+				var spanName = tr.Operation()
+				switch tr.Kind() {
+				case transport.KindHTTP:
+					spanName = fmt.Sprintf("HTTP Client %s", tr.Operation())
+				case transport.KindGRPC:
+					spanName = fmt.Sprintf("GRPC Client %s", tr.Operation())
+				}
+
+				ctx, span = tracer.Start(ctx, spanName, oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 				defer span.End()
 
 				cfg.propagators.Inject(ctx, tr.RequestHeader())
@@ -120,8 +129,16 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 				spanCtx := oteltrace.SpanContextFromContext(ctx)
 				ctx = baggage.ContextWithBaggage(ctx, bags)
 
+				var spanName = tr.Operation()
+				switch tr.Kind() {
+				case transport.KindHTTP:
+					spanName = fmt.Sprintf("HTTP Server %s", tr.Operation())
+				case transport.KindGRPC:
+					spanName = fmt.Sprintf("GRPC Server %s", tr.Operation())
+				}
+
 				var span trace.Span
-				ctx, span = tracer.Start(oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx), fmt.Sprintf("HTTP Server %s", tr.Operation()), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+				ctx, span = tracer.Start(oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx), spanName, oteltrace.WithSpanKind(oteltrace.SpanKindServer))
 				defer span.End()
 
 				setServerSpan(ctx, span, req)
