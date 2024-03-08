@@ -33,7 +33,7 @@ type Next struct {
 func New(opts ...Option) (*Next, error) {
 	opt := buildOptions(opts...)
 
-	// register runtime.
+	// register runtime
 	run := runtime.NewRuntime()
 	if err := run.Init(
 		runtime.Loader(opt.Loader...),
