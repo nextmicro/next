@@ -33,7 +33,7 @@ type Next struct {
 func New(opts ...Option) (*Next, error) {
 	opt := buildOptions(opts...)
 
-	// register runtime
+	// register runtime.
 	run := runtime.NewRuntime()
 	if err := run.Init(
 		runtime.Loader(opt.Loader...),
@@ -102,7 +102,7 @@ func (app *Next) initMetrics() {
 
 // buildOptions build options
 func buildOptions(options ...Option) Options {
-	var opts []Option
+	var opts = make([]Option, 0, len(options)+4)
 	opt := Options{
 		Ctx:              context.Background(),
 		Sigs:             []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL},
