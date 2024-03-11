@@ -17,8 +17,8 @@ import (
 const namespace = "metadata"
 
 func init() {
-	chain.Register("client."+namespace, Client)
-	chain.Register("server."+namespace, Server)
+	chain.Register("client."+namespace, injectionClient)
+	chain.Register("server."+namespace, injectionServer)
 }
 
 // // Option is metadata option.
@@ -38,8 +38,7 @@ func (o *options) hasPrefix(key string) bool {
 	return false
 }
 
-// Server is middleware server-side metadata.
-func Server(c *config.Middleware) (middleware.Middleware, error) {
+func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 	options := options{
 		Metadata: &v1.Metadata{
 			Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
@@ -51,6 +50,11 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Server(options), nil
+}
+
+// Server is middleware server-side metadata.
+func Server(options options) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromServerContext(ctx)
@@ -70,11 +74,10 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 			ctx = metadata.NewServerContext(ctx, md)
 			return handler(ctx, req)
 		}
-	}, nil
+	}
 }
 
-// Client is middleware client-side metadata.
-func Client(c *config.Middleware) (middleware.Middleware, error) {
+func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	options := options{
 		Metadata: &v1.Metadata{
 			Prefix: []string{"x-md-global-"},
@@ -86,6 +89,11 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Client(options), nil
+}
+
+// Client is middleware client-side metadata.
+func Client(options options) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromClientContext(ctx)
@@ -119,5 +127,5 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			}
 			return handler(ctx, req)
 		}
-	}, nil
+	}
 }

@@ -21,8 +21,8 @@ import (
 const namespace = "metrics"
 
 func init() {
-	chain.Register("client."+namespace, Client)
-	chain.Register("server."+namespace, Server)
+	chain.Register("client."+namespace, injectionClient)
+	chain.Register("server."+namespace, injectionServer)
 }
 
 type Option func(o *Options)
@@ -37,8 +37,7 @@ type Options struct {
 	seconds metrics.Observer
 }
 
-// Client is middleware client-side metrics.
-func Client(c *config.Middleware) (middleware.Middleware, error) {
+func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	options := Options{
 		requests: prom.NewCounter(metric.ClientMetricRequests),
 		seconds:  prom.NewHistogram(metric.ClientMetricMillisecond),
@@ -50,6 +49,11 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Client(options), nil
+}
+
+// Client is middleware client-side metrics.
+func Client(options Options) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
@@ -78,11 +82,10 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 
 			return reply, err
 		}
-	}, nil
+	}
 }
 
-// Server wraps a server.Server with prometheus metrics.
-func Server(c *config.Middleware) (middleware.Middleware, error) {
+func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 	options := Options{
 		requests: prom.NewCounter(metric.ServerMetricRequests),
 		seconds:  prom.NewHistogram(metric.ServerMetricMillisecond),
@@ -94,6 +97,11 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Server(options), nil
+}
+
+// Server wraps a server.Server with prometheus metrics.
+func Server(options Options) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 
@@ -124,5 +132,5 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 
 			return reply, err
 		}
-	}, nil
+	}
 }

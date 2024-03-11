@@ -27,8 +27,8 @@ const (
 const namespace = "logging"
 
 func init() {
-	chain.Register("client."+namespace, Client)
-	chain.Register("server."+namespace, Server)
+	chain.Register("client."+namespace, injectionClient)
+	chain.Register("server."+namespace, injectionServer)
 }
 
 // Redacter defines how to log an object
@@ -45,20 +45,23 @@ func extractError(err error) string {
 	return fmt.Sprintf("%+v", err)
 }
 
-// Client is an client logging middleware.
-func Client(c *config.Middleware) (middleware.Middleware, error) {
+func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
 		TimeFormat:    defaultFormat,
 		SlowThreshold: v,
 	}
-
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
+	return Client(options), nil
+}
+
+// Client is an client logging middleware.
+func Client(options *v1.Logging) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
@@ -114,11 +117,10 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 
 			return resp, err
 		}
-	}, nil
+	}
 }
 
-// Server is an client logging middleware.
-func Server(c *config.Middleware) (middleware.Middleware, error) {
+func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
 		TimeFormat:    defaultFormat,
@@ -131,6 +133,11 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Server(options), nil
+}
+
+// Server is an client logging middleware.
+func Server(options *v1.Logging) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
@@ -180,5 +187,5 @@ func Server(c *config.Middleware) (middleware.Middleware, error) {
 
 			return resp, err
 		}
-	}, nil
+	}
 }

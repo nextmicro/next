@@ -15,14 +15,14 @@ import (
 )
 
 func init() {
-	chain.Register("recovery.*", Recovery)
+	chain.Register("client.recovery", injection)
+	chain.Register("server.recovery", injection)
 }
 
 // ErrUnknownRequest is unknown request error.
 var ErrUnknownRequest = errors.InternalServer("UNKNOWN", "unknown request error")
 
-// Recovery is a server middleware that recovers from any panics.
-func Recovery(c *config.Middleware) (middleware.Middleware, error) {
+func injection(c *config.Middleware) (middleware.Middleware, error) {
 	cfg := &v1.Recovery{
 		StackSize:         5 << 10,
 		DisableStackAll:   false,
@@ -34,6 +34,11 @@ func Recovery(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Recovery(cfg), nil
+}
+
+// Recovery is a server middleware that recovers from any panics.
+func Recovery(cfg *v1.Recovery) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
 
@@ -49,5 +54,5 @@ func Recovery(c *config.Middleware) (middleware.Middleware, error) {
 			}()
 			return handler(ctx, req)
 		}
-	}, nil
+	}
 }

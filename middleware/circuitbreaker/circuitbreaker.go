@@ -22,7 +22,7 @@ import (
 var ErrNotAllowed = errors.New(503, "CIRCUITBREAKER", "request failed due to circuit breaker triggered")
 
 func init() {
-	chain.Register("circuitbreaker.client", Client)
+	chain.Register("circuitbreaker.client", injection)
 }
 
 type ratioTrigger struct {
@@ -80,9 +80,7 @@ func makeBreakerTrigger(in *v1.CircuitBreaker) circuitbreaker.CircuitBreaker {
 	}
 }
 
-// Client circuitbreaker middleware will return errBreakerTriggered when the circuit
-// breaker is triggered and the request is rejected directly.
-func Client(c *config.Middleware) (middleware.Middleware, error) {
+func injection(c *config.Middleware) (middleware.Middleware, error) {
 	options := &v1.CircuitBreaker{}
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
@@ -90,8 +88,13 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
-	breaker := makeBreakerTrigger(options)
+	return Client(options), nil
+}
 
+// Client circuitbreaker middleware will return errBreakerTriggered when the circuit
+// breaker is triggered and the request is rejected directly.
+func Client(options *v1.CircuitBreaker) middleware.Middleware {
+	breaker := makeBreakerTrigger(options)
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			if err := breaker.Allow(); err != nil {
@@ -110,5 +113,5 @@ func Client(c *config.Middleware) (middleware.Middleware, error) {
 			}
 			return reply, err
 		}
-	}, nil
+	}
 }

@@ -15,13 +15,13 @@ import (
 )
 
 func init() {
-	middleware.Register("bbr.server", Server)
+	middleware.Register("bbr.server", injection)
 }
 
 // ErrLimitExceed is service unavailable due to rate limit exceeded.
 var ErrLimitExceed = errors.New(429, "RATELIMIT", "service unavailable due to rate limit exceeded")
 
-func Server(c *config.Middleware) (chain.Middleware, error) {
+func injection(c *config.Middleware) (chain.Middleware, error) {
 	cfg := &v1.BBR{}
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
@@ -29,6 +29,10 @@ func Server(c *config.Middleware) (chain.Middleware, error) {
 		}
 	}
 
+	return Server(cfg), nil
+}
+
+func Server(cfg *v1.BBR) chain.Middleware {
 	var bbrOpts []bbr.Option
 	if cfg.GetWindow().AsDuration() >= 0 {
 		bbrOpts = append(bbrOpts, bbr.WithWindow(cfg.Window.AsDuration()))
@@ -56,5 +60,5 @@ func Server(c *config.Middleware) (chain.Middleware, error) {
 			done(ratelimit.DoneInfo{Err: err})
 			return reply, err
 		}
-	}, nil
+	}
 }

@@ -28,12 +28,11 @@ const (
 )
 
 func init() {
-	chain.Register("client.tracing", Client)
-	chain.Register("server.tracing", Server)
+	chain.Register("client.tracing", injectionClient)
+	chain.Register("server.tracing", injectionServer)
 }
 
-// Client returns a new client middleware for OpenTelemetry.
-func Client(c *configv1.Middleware) (middleware.Middleware, error) {
+func injectionClient(c *configv1.Middleware) (middleware.Middleware, error) {
 	opt := options{
 		Tracing: &v1.Tracing{},
 	}
@@ -43,6 +42,11 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Client(opt), nil
+}
+
+// Client returns a new client middleware for OpenTelemetry.
+func Client(opt options) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
@@ -97,11 +101,10 @@ func Client(c *configv1.Middleware) (middleware.Middleware, error) {
 			}
 			return
 		}
-	}, nil
+	}
 }
 
-// Server returns a new server middleware for OpenTelemetry.
-func Server(c *configv1.Middleware) (middleware.Middleware, error) {
+func injectionServer(c *configv1.Middleware) (middleware.Middleware, error) {
 	opt := options{
 		Tracing: &v1.Tracing{},
 	}
@@ -111,6 +114,11 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
+	return Server(opt), nil
+}
+
+// Server returns a new server middleware for OpenTelemetry.
+func Server(opt options) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
@@ -177,5 +185,5 @@ func Server(c *configv1.Middleware) (middleware.Middleware, error) {
 
 			return
 		}
-	}, nil
+	}
 }
