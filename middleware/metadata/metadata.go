@@ -21,16 +21,19 @@ func init() {
 	chain.Register("server."+namespace, injectionServer)
 }
 
+// Option is metadata option.
+type Option func(*options)
+
 // // Option is metadata option.
 // type Option func(*options)
 type options struct {
-	*v1.Metadata
-	md metadata.Metadata
+	prefix []string
+	md     metadata.Metadata
 }
 
 func (o *options) hasPrefix(key string) bool {
 	k := strings.ToLower(key)
-	for _, prefix := range o.GetPrefix() {
+	for _, prefix := range o.prefix {
 		if strings.HasPrefix(k, prefix) {
 			return true
 		}
@@ -38,23 +41,47 @@ func (o *options) hasPrefix(key string) bool {
 	return false
 }
 
+// WithConstants with constant metadata key value.
+func WithConstants(md metadata.Metadata) Option {
+	return func(o *options) {
+		o.md = md
+	}
+}
+
+// WithPropagatedPrefix with propagated key prefix.
+func WithPropagatedPrefix(prefix ...string) Option {
+	return func(o *options) {
+		o.prefix = prefix
+	}
+}
+
 func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
-	options := options{
-		Metadata: &v1.Metadata{
-			Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
-		},
+	cfg := &v1.Metadata{
+		Prefix: []string{"x-md-"}, // x-md-global-, x-md-local
 	}
 	if c.Options != nil {
-		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Server(options), nil
+	opts := make([]Option, 0, 1)
+	if len(cfg.Prefix) > 0 {
+		opts = append(opts, WithPropagatedPrefix(cfg.Prefix...))
+	}
+
+	return Server(opts...), nil
 }
 
 // Server is middleware server-side metadata.
-func Server(options options) middleware.Middleware {
+func Server(opts ...Option) middleware.Middleware {
+	options := &options{
+		prefix: []string{"x-md-"}, // x-md-global-, x-md-local
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromServerContext(ctx)
@@ -78,22 +105,32 @@ func Server(options options) middleware.Middleware {
 }
 
 func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
-	options := options{
-		Metadata: &v1.Metadata{
-			Prefix: []string{"x-md-global-"},
-		},
+	cfg := &v1.Metadata{
+		Prefix: []string{"x-md-global-"},
 	}
 	if c.Options != nil {
-		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Client(options), nil
+	opts := make([]Option, 0, 1)
+	if len(cfg.Prefix) > 0 {
+		opts = append(opts, WithPropagatedPrefix(cfg.Prefix...))
+	}
+
+	return Client(opts...), nil
 }
 
 // Client is middleware client-side metadata.
-func Client(options options) middleware.Middleware {
+func Client(opts ...Option) middleware.Middleware {
+	options := &options{
+		prefix: []string{"x-md-global-"},
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			tr, ok := transport.FromClientContext(ctx)

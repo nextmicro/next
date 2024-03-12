@@ -45,6 +45,14 @@ func extractError(err error) string {
 	return fmt.Sprintf("%+v", err)
 }
 
+// mergeFields merges the fields
+func mergeFields(fields map[string]interface{}, m map[string]string) map[string]interface{} {
+	for k, v := range m {
+		fields[k] = v
+	}
+	return fields
+}
+
 func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
@@ -57,13 +65,40 @@ func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
-	return Client(options), nil
+	opts := make([]Option, 0)
+	if options.Disabled {
+		opts = append(opts, WithDisabled(options.Disabled))
+	}
+	if options.TimeFormat != "" {
+		opts = append(opts, WithTimeFormat(options.TimeFormat))
+	}
+	if options.SlowThreshold != nil && options.SlowThreshold.AsDuration() > 0 {
+		opts = append(opts, WithSlowThreshold(options.SlowThreshold.AsDuration()))
+	}
+
+	return Client(opts...), nil
 }
 
 // Client is an client logging middleware.
-func Client(options *v1.Logging) middleware.Middleware {
+func Client(opts ...Option) middleware.Middleware {
+	cfg := Options{
+		timeFormat:    defaultFormat,          // 默认时间格式
+		logger:        logger.DefaultLogger,   // 默认日志
+		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
+		handler: func(ctx context.Context, req any) map[string]string {
+			return make(map[string]string)
+		},
+	}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if cfg.disabled {
+				return handler(ctx, req)
+			}
+
 			var (
 				kind        string
 				route       string
@@ -86,7 +121,7 @@ func Client(options *v1.Logging) middleware.Middleware {
 			}
 
 			fields := map[string]interface{}{
-				"start":     startTime.Format(options.TimeFormat),
+				"start":     startTime.Format(cfg.timeFormat),
 				"kind":      "client",
 				"component": kind,
 				"route":     route,
@@ -104,15 +139,22 @@ func Client(options *v1.Logging) middleware.Middleware {
 				fields["code"] = se.Code
 				fields["reason"] = se.Reason
 			}
-			log := logger.WithContext(ctx).WithFields(fields)
+
+			if cfg.handler != nil {
+				fields = mergeFields(fields, cfg.handler(ctx, req))
+			}
+
+			_log := logger.WithContext(ctx).WithFields(fields)
 
 			// show log
-			if duration > options.GetSlowThreshold().AsDuration() {
-				log.Info(kind + " client slow")
+			if cfg.slowThreshold > 0 && duration > cfg.slowThreshold && err != nil {
+				_log.Error(kind + " server slow")
+			} else if cfg.slowThreshold > 0 && duration > cfg.slowThreshold {
+				_log.Info(kind + " server slow")
 			} else if err != nil {
-				log.Error(kind + " client")
+				_log.Error(kind + " server")
 			} else {
-				log.Info(kind + " client")
+				_log.Info(kind + " server")
 			}
 
 			return resp, err
@@ -133,13 +175,40 @@ func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
-	return Server(options), nil
+	opts := make([]Option, 0)
+	if options.Disabled {
+		opts = append(opts, WithDisabled(options.Disabled))
+	}
+	if options.TimeFormat != "" {
+		opts = append(opts, WithTimeFormat(options.TimeFormat))
+	}
+	if options.SlowThreshold != nil && options.SlowThreshold.AsDuration() > 0 {
+		opts = append(opts, WithSlowThreshold(options.SlowThreshold.AsDuration()))
+	}
+
+	return Server(opts...), nil
 }
 
 // Server is an client logging middleware.
-func Server(options *v1.Logging) middleware.Middleware {
+func Server(opts ...Option) middleware.Middleware {
+	cfg := Options{
+		timeFormat:    defaultFormat,          // 默认时间格式
+		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
+		logger:        logger.DefaultLogger,   // 默认日志
+		handler: func(ctx context.Context, req any) map[string]string {
+			return make(map[string]string)
+		},
+	}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			if cfg.disabled {
+				return handler(ctx, req)
+			}
+
 			var (
 				kind      string
 				route     string
@@ -160,7 +229,7 @@ func Server(options *v1.Logging) middleware.Middleware {
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":     startTime.Format(options.GetTimeFormat()),
+				"start":     startTime.Format(cfg.timeFormat),
 				"kind":      "server",
 				"component": kind,
 				"route":     route,
@@ -175,14 +244,20 @@ func Server(options *v1.Logging) middleware.Middleware {
 				fields["error"] = extractError(err)
 			}
 
-			log := logger.WithContext(ctx).WithFields(fields)
+			if cfg.handler != nil {
+				fields = mergeFields(fields, cfg.handler(ctx, req))
+			}
+
+			_log := logger.WithContext(ctx).WithFields(fields)
 			// show log
-			if duration > options.GetSlowThreshold().AsDuration() {
-				log.Info(kind + " server slow")
+			if cfg.slowThreshold > 0 && duration > cfg.slowThreshold && err != nil {
+				_log.Error(kind + " server slow")
+			} else if cfg.slowThreshold > 0 && duration > cfg.slowThreshold {
+				_log.Info(kind + " server slow")
 			} else if err != nil {
-				log.Error(kind + " server")
+				_log.Error(kind + " server")
 			} else {
-				log.Info(kind + " server")
+				_log.Info(kind + " server")
 			}
 
 			return resp, err

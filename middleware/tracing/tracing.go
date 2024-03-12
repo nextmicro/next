@@ -33,23 +33,29 @@ func init() {
 }
 
 func injectionClient(c *configv1.Middleware) (middleware.Middleware, error) {
-	opt := options{
-		Tracing: &v1.Tracing{},
-	}
+	opt := &v1.Tracing{}
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, opt, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Client(opt), nil
+	opts := make([]Option, 0)
+	if opt.Disabled {
+		opts = append(opts, WithDisabled(true))
+	}
+
+	return Client(opts...), nil
 }
 
 // Client returns a new client middleware for OpenTelemetry.
-func Client(opt options) middleware.Middleware {
+func Client(opts ...Option) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
+	}
+	for _, opt := range opts {
+		opt.apply(&cfg)
 	}
 
 	tracer := cfg.tracerProvider.Tracer(tracerName)
@@ -105,23 +111,29 @@ func Client(opt options) middleware.Middleware {
 }
 
 func injectionServer(c *configv1.Middleware) (middleware.Middleware, error) {
-	opt := options{
-		Tracing: &v1.Tracing{},
-	}
+	opt := &v1.Tracing{}
 	if c.Options != nil {
 		if err := anypb.UnmarshalTo(c.Options, opt, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Server(opt), nil
+	opts := make([]Option, 0)
+	if opt.Disabled {
+		opts = append(opts, WithDisabled(true))
+	}
+
+	return Server(opts...), nil
 }
 
 // Server returns a new server middleware for OpenTelemetry.
-func Server(opt options) middleware.Middleware {
+func Server(opts ...Option) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
 		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
+	}
+	for _, opt := range opts {
+		opt.apply(&cfg)
 	}
 
 	tracer := cfg.tracerProvider.Tracer(

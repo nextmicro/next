@@ -19,8 +19,8 @@ func init() {
 	chain.Register("server.recovery", injection)
 }
 
-// ErrUnknownRequest is unknown request error.
-var ErrUnknownRequest = errors.InternalServer("UNKNOWN", "unknown request error")
+// ErrPanicRecover is panic recover error.
+var ErrPanicRecover = errors.InternalServer("PANIC_RECOVER", "Panic recover error")
 
 func injection(c *config.Middleware) (middleware.Middleware, error) {
 	cfg := &v1.Recovery{
@@ -34,21 +34,45 @@ func injection(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
-	return Recovery(cfg), nil
+	opts := make([]Option, 0)
+	if cfg.StackSize > 0 {
+		opts = append(opts, WithStackSize(int(cfg.StackSize)))
+	}
+	if cfg.DisableStackAll {
+		opts = append(opts, WithDisableStackAll(cfg.DisableStackAll))
+	}
+	if cfg.DisablePrintStack {
+		opts = append(opts, WithDisablePrintStack(cfg.DisablePrintStack))
+	}
+
+	return Recovery(opts...), nil
 }
 
 // Recovery is a server middleware that recovers from any panics.
-func Recovery(cfg *v1.Recovery) middleware.Middleware {
+func Recovery(opts ...Option) middleware.Middleware {
+	cfg := options{
+		logger:            logger.DefaultLogger,
+		stackSize:         5 << 10,
+		disableStackAll:   false,
+		disablePrintStack: false,
+		handler: func(ctx context.Context, err interface{}) error {
+			return ErrPanicRecover
+		},
+	}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
 
 			defer func() {
 				if rerr := recover(); rerr != nil {
-					buf := make([]byte, cfg.StackSize)
-					length := runtime.Stack(buf, !cfg.DisableStackAll)
+					buf := make([]byte, cfg.stackSize)
+					length := runtime.Stack(buf, !cfg.disableStackAll)
 					buf = buf[:length]
 
-					err = ErrUnknownRequest
+					err = cfg.handler(ctx, rerr)
 					logger.WithContext(ctx).Errorf("[PANIC RECOVER] error: %v,  stack: %s", rerr, buf)
 				}
 			}()

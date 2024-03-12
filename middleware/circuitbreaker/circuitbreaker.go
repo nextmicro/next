@@ -22,7 +22,7 @@ import (
 var ErrNotAllowed = errors.New(503, "CIRCUITBREAKER", "request failed due to circuit breaker triggered")
 
 func init() {
-	chain.Register("circuitbreaker.client", injection)
+	chain.Register("client.circuitbreaker", injection)
 }
 
 type ratioTrigger struct {
@@ -88,28 +88,54 @@ func injection(c *config.Middleware) (middleware.Middleware, error) {
 		}
 	}
 
-	return Client(options), nil
+	opts := make([]Option, 0, 1)
+	breaker := makeBreakerTrigger(options)
+	if breaker != nil {
+		opts = append(opts, WithCircuitBreaker(breaker))
+	}
+
+	return Client(opts...), nil
+}
+
+// Option represents options update func
+type Option func(*Options)
+
+// Options represents hystrix client wrapper options
+type Options struct {
+	breaker circuitbreaker.CircuitBreaker
+}
+
+func WithCircuitBreaker(c circuitbreaker.CircuitBreaker) Option {
+	return func(o *Options) {
+		o.breaker = c
+	}
 }
 
 // Client circuitbreaker middleware will return errBreakerTriggered when the circuit
 // breaker is triggered and the request is rejected directly.
-func Client(options *v1.CircuitBreaker) middleware.Middleware {
-	breaker := makeBreakerTrigger(options)
+func Client(opts ...Option) middleware.Middleware {
+	options := Options{
+		breaker: sre.NewBreaker(),
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			if err := breaker.Allow(); err != nil {
+			if err := options.breaker.Allow(); err != nil {
 				// rejected
 				// NOTE: when client reject requests locally,
 				// continue to add counter let the drop ratio higher.
-				breaker.MarkFailed()
+				options.breaker.MarkFailed()
 				return nil, ErrNotAllowed
 			}
 			// allowed
 			reply, err := handler(ctx, req)
 			if err != nil && (errors.IsInternalServer(err) || errors.IsServiceUnavailable(err) || errors.IsGatewayTimeout(err)) {
-				breaker.MarkFailed()
+				options.breaker.MarkFailed()
 			} else {
-				breaker.MarkSuccess()
+				options.breaker.MarkSuccess()
 			}
 			return reply, err
 		}

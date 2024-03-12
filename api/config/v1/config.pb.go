@@ -806,7 +806,7 @@ type Telemetry struct {
 	unknownFields protoimpl.UnknownFields
 
 	Disable  bool              `protobuf:"varint,1,opt,name=disable,proto3" json:"disable,omitempty"`                                                                                        // disable tracing
-	Exporter string            `protobuf:"bytes,2,opt,name=exporter,proto3" json:"exporter,omitempty"`                                                                                       // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file
+	Exporter string            `protobuf:"bytes,2,opt,name=exporter,proto3" json:"exporter,omitempty"`                                                                                       // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file, noop
 	Endpoint string            `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`                                                                                       // tracing endpoint
 	Sampler  float64           `protobuf:"fixed64,4,opt,name=sampler,proto3" json:"sampler,omitempty"`                                                                                       // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
 	Headers  map[string]string `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // otlp headers

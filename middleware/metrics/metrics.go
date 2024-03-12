@@ -30,6 +30,9 @@ type Option func(o *Options)
 type Options struct {
 	*v1.Metrics
 
+	// disabled metrics.
+	disabled bool
+
 	// counter: <client/server>_requests_code_total{kind, operation, code, reason}
 	requests metrics.Counter
 
@@ -37,23 +40,49 @@ type Options struct {
 	seconds metrics.Observer
 }
 
-func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
-	options := Options{
-		requests: prom.NewCounter(metric.ClientMetricRequests),
-		seconds:  prom.NewHistogram(metric.ClientMetricMillisecond),
+// WithDisabled set disabled metrics.
+func WithDisabled(disabled bool) Option {
+	return func(o *Options) {
+		o.disabled = disabled
 	}
+}
 
+// WithRequests with requests counter.
+func WithRequests(c metrics.Counter) Option {
+	return func(o *Options) {
+		o.requests = c
+	}
+}
+
+// WithSeconds with seconds histogram.
+func WithSeconds(c metrics.Observer) Option {
+	return func(o *Options) {
+		o.seconds = c
+	}
+}
+
+func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
+	cfg := &v1.Metrics{}
 	if c.Options != nil {
-		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Client(options), nil
+	opts := make([]Option, 0)
+	return Client(opts...), nil
 }
 
 // Client is middleware client-side metrics.
-func Client(options Options) middleware.Middleware {
+func Client(opts ...Option) middleware.Middleware {
+	options := Options{
+		requests: prom.NewCounter(metric.ClientMetricRequests),
+		seconds:  prom.NewHistogram(metric.ClientMetricMillisecond),
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var (
@@ -86,22 +115,27 @@ func Client(options Options) middleware.Middleware {
 }
 
 func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
-	options := Options{
-		requests: prom.NewCounter(metric.ServerMetricRequests),
-		seconds:  prom.NewHistogram(metric.ServerMetricMillisecond),
-	}
-
+	cfg := &v1.Metrics{}
 	if c.Options != nil {
-		if err := anypb.UnmarshalTo(c.Options, options, proto.UnmarshalOptions{Merge: true}); err != nil {
+		if err := anypb.UnmarshalTo(c.Options, cfg, proto.UnmarshalOptions{Merge: true}); err != nil {
 			return nil, err
 		}
 	}
 
-	return Server(options), nil
+	opts := make([]Option, 0)
+	return Server(opts...), nil
 }
 
 // Server wraps a server.Server with prometheus metrics.
-func Server(options Options) middleware.Middleware {
+func Server(opts ...Option) middleware.Middleware {
+	options := Options{
+		requests: prom.NewCounter(metric.ServerMetricRequests),
+		seconds:  prom.NewHistogram(metric.ServerMetricMillisecond),
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 

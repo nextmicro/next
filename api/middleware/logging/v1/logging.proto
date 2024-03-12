@@ -8,6 +8,7 @@ import "google/protobuf/duration.proto";
 
 // logging middleware config.
 message Logging {
-  string time_format = 1; // time format, default is 2006-01-02T15:04:05.999Z0700
-  google.protobuf.Duration slow_threshold = 2; // slow threshold, default is 300ms
+  bool disabled  = 1; // disable logging middleware, default is false
+  string time_format = 2; // time format, default is 2006-01-02T15:04:05.999Z0700
+  google.protobuf.Duration slow_threshold = 3; // slow threshold, default is 300ms
 }

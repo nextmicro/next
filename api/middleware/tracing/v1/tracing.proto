@@ -6,5 +6,5 @@ option go_package = "github.com/nextmicro/next/api/middleware/tracing/v1";
 
 // Tracing middleware config.
 message Tracing {
-
+  bool disabled  = 1; // disable logging middleware, default is false
 }

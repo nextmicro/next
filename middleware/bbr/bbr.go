@@ -29,25 +29,24 @@ func injection(c *config.Middleware) (chain.Middleware, error) {
 		}
 	}
 
-	return Server(cfg), nil
-}
-
-func Server(cfg *v1.BBR) chain.Middleware {
-	var bbrOpts []bbr.Option
+	opts := make([]bbr.Option, 0)
 	if cfg.GetWindow().AsDuration() >= 0 {
-		bbrOpts = append(bbrOpts, bbr.WithWindow(cfg.Window.AsDuration()))
+		opts = append(opts, bbr.WithWindow(cfg.Window.AsDuration()))
 	}
 	if cfg.GetBucket() != 0 {
-		bbrOpts = append(bbrOpts, bbr.WithBucket(int(cfg.Bucket)))
+		opts = append(opts, bbr.WithBucket(int(cfg.Bucket)))
 	}
 	if cfg.CpuThreshold != 0 {
-		bbrOpts = append(bbrOpts, bbr.WithCPUThreshold(cfg.CpuThreshold))
+		opts = append(opts, bbr.WithCPUThreshold(cfg.CpuThreshold))
 	}
 	if cfg.CpuQuota != 0 {
-		bbrOpts = append(bbrOpts, bbr.WithCPUQuota(cfg.CpuQuota))
+		opts = append(opts, bbr.WithCPUQuota(cfg.CpuQuota))
 	}
+	return Server(opts...), nil
+}
 
-	limiter := bbr.NewLimiter(bbrOpts...) // use default settings
+func Server(opts ...bbr.Option) chain.Middleware {
+	limiter := bbr.NewLimiter(opts...) // use default settings
 	return func(handler chain.Handler) chain.Handler {
 		return func(ctx context.Context, req interface{}) (reply interface{}, err error) {
 			done, e := limiter.Allow()

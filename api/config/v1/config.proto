@@ -104,7 +104,7 @@ message Registry {
 // Telemetry config
 message Telemetry {
   bool    disable = 1;   // disable tracing
-  string exporter = 2; // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file
+  string exporter = 2; // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file, noop
   string  endpoint = 3;   // tracing endpoint
   double  sampler = 4; // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
   map<string, string> headers = 5; // otlp headers
