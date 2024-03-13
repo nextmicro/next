@@ -97,11 +97,7 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		serverConfigs = append(serverConfigs, constant.ServerConfig{
-			IpAddr: host,
-			Port:   p,
-		})
+		serverConfigs = append(serverConfigs, *constant.NewServerConfig(host, p, constant.WithContextPath(cfg.ContextPath)))
 	}
 
 	var duration uint64 = 5000

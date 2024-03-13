@@ -103,10 +103,10 @@ message Registry {
 
 // Telemetry config
 message Telemetry {
-  bool    disable = 1;   // disable tracing
+  bool   disable = 1;   // disable tracing
   string exporter = 2; // tracing exporter, eg: otlphttp, otlpgrpc, stdout, zipkin, file, noop
-  string  endpoint = 3;   // tracing endpoint
-  double  sampler = 4; // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
+  string endpoint = 3;   // tracing endpoint
+  double sampler = 4; // tracing sampler: 0-1, 1 means full sampling, 0 means no sampling
   map<string, string> headers = 5; // otlp headers
   string http_path = 6; // otlp http path
 }
@@ -125,10 +125,12 @@ message Nacos {
   string username = 5;
   // nacos config password
   string password = 6;
+  // the nacos server contextpath,default=/nacos,this is not required in 2.0
+  string context_path = 7;
   // nacos config log dir
-  string log_dir = 7;
+  string log_dir = 8;
   // nacos config cache dir
-  string cache_dir = 8;
+  string cache_dir = 9;
   // nacos timeout(ms). default 5000
   google.protobuf.Duration timeout = 10;
   // nacos logger level. default info
