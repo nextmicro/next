@@ -120,7 +120,7 @@ message Nacos {
   // nacos config group
   string group = 3;
   // nacos config namespace
-  string namespaces = 4;
+  string namespace = 4;
   // nacos config username
   string username = 5;
   // nacos config password
@@ -135,6 +135,8 @@ message Nacos {
   google.protobuf.Duration timeout = 10;
   // nacos logger level. default info
   string log_level = 11;
+  // nacos format, default=yaml
+  string format = 12;
 }
 
 // middleware config

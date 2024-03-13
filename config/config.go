@@ -109,13 +109,16 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 	} else if cfg.GetLogLevel() == "" {
 		cfg.LogLevel = "info"
 	}
+	if cfg.Format == "" {
+		cfg.Format = "yaml"
+	}
 
 	clientConfig := constant.NewClientConfig(
 		constant.WithUsername(cfg.GetUsername()),
 		constant.WithPassword(cfg.GetPassword()),
 		constant.WithTimeoutMs(duration),
 		constant.WithCacheDir(cfg.GetCacheDir()),
-		constant.WithNamespaceId(cfg.GetNamespaces()),
+		constant.WithNamespaceId(cfg.GetNamespace()),
 		constant.WithNotLoadCacheAtStart(true),
 		constant.WithLogLevel(cfg.LogLevel),
 		constant.WithOpenKMS(false),
@@ -131,7 +134,7 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 	}
 
 	return []kConfig.Source{
-		nacos.NewConfigSource(client, nacos.WithDataID(cfg.DataId), nacos.WithGroup(cfg.Group)),
+		nacos.NewConfigSource(client, nacos.WithDataID(cfg.DataId), nacos.WithGroup(cfg.Group), nacos.WithFormat(cfg.Format)),
 	}, nil
 }
 

@@ -13,6 +13,7 @@ import (
 type Watcher struct {
 	dataID             string
 	group              string
+	format             string
 	content            chan string
 	cancelListenConfig cancelListenConfigFunc
 
@@ -22,11 +23,12 @@ type Watcher struct {
 
 type cancelListenConfigFunc func(params vo.ConfigParam) (err error)
 
-func newWatcher(ctx context.Context, dataID string, group string, cancelListenConfig cancelListenConfigFunc) *Watcher {
+func newWatcher(ctx context.Context, dataID string, group string, format string, cancelListenConfig cancelListenConfigFunc) *Watcher {
 	ctx, cancel := context.WithCancel(ctx)
 	w := &Watcher{
 		dataID:             dataID,
 		group:              group,
+		format:             format,
 		cancelListenConfig: cancelListenConfig,
 		content:            make(chan string, 100),
 
@@ -37,6 +39,10 @@ func newWatcher(ctx context.Context, dataID string, group string, cancelListenCo
 }
 
 func (w *Watcher) Next() ([]*config.KeyValue, error) {
+	format := strings.TrimPrefix(filepath.Ext(w.dataID), ".")
+	if format == "" && w.format != "" {
+		format = w.format
+	}
 	select {
 	case <-w.ctx.Done():
 		return nil, w.ctx.Err()
@@ -46,7 +52,7 @@ func (w *Watcher) Next() ([]*config.KeyValue, error) {
 			{
 				Key:    k,
 				Value:  []byte(content),
-				Format: strings.TrimPrefix(filepath.Ext(k), "."),
+				Format: format,
 			},
 		}, nil
 	}

@@ -16,6 +16,7 @@ type Option func(*options)
 type options struct {
 	group  string
 	dataID string
+	format string
 }
 
 // WithGroup With nacos config group.
@@ -29,6 +30,13 @@ func WithGroup(group string) Option {
 func WithDataID(dataID string) Option {
 	return func(o *options) {
 		o.dataID = dataID
+	}
+}
+
+// WithFormat with nacos config format.
+func WithFormat(format string) Option {
+	return func(o *options) {
+		o.format = format
 	}
 }
 
@@ -54,17 +62,21 @@ func (c *Config) Load() ([]*config.KeyValue, error) {
 		return nil, err
 	}
 	k := c.opts.dataID
+	format := strings.TrimPrefix(filepath.Ext(k), ".")
+	if format == "" && c.opts.format != "" {
+		format = c.opts.format
+	}
 	return []*config.KeyValue{
 		{
 			Key:    k,
 			Value:  []byte(content),
-			Format: strings.TrimPrefix(filepath.Ext(k), "."),
+			Format: format,
 		},
 	}, nil
 }
 
 func (c *Config) Watch() (config.Watcher, error) {
-	watcher := newWatcher(context.Background(), c.opts.dataID, c.opts.group, c.client.CancelListenConfig)
+	watcher := newWatcher(context.Background(), c.opts.dataID, c.opts.group, c.opts.format, c.client.CancelListenConfig)
 	err := c.client.ListenConfig(vo.ConfigParam{
 		DataId: c.opts.dataID,
 		Group:  c.opts.group,
