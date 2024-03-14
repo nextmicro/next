@@ -297,8 +297,8 @@ github.com/nacos-group/nacos-sdk-go/v2 v2.2.5 h1:r0wwT7PayEjvEHzWXwr1ROi/JSqzujM
 github.com/nacos-group/nacos-sdk-go/v2 v2.2.5/go.mod h1:OObBon0prVJVPoIbSZxpEkFiBfL0d1LcBtuAMiNn+8c=
 github.com/nextmicro/gokit/timex v1.0.1 h1:MncdiGzp7eOmR5YvBkyeZ6S1Dc/e6f5d/O7a/2NbXow=
 github.com/nextmicro/gokit/timex v1.0.1/go.mod h1:BwFB3XRGWjNU4uKirHnI9gsPL8ExM4LiUYlt0UOj/Io=
-github.com/nextmicro/gokit/trace v1.0.10 h1:Pg02v3BySkf0rn5HmM0brSiH3umDBlQ7G1Off8kE3fw=
-github.com/nextmicro/gokit/trace v1.0.10/go.mod h1:CWM26HGU5jVdsx6mbH2gsVfGSB/3TbZjiKV8JYDEWkU=
+github.com/nextmicro/gokit/trace v1.0.11 h1:vb5oHeQ/veKnkRxRIGPLk2E1oWeCd1pmDOrebxvNELA=
+github.com/nextmicro/gokit/trace v1.0.11/go.mod h1:CWM26HGU5jVdsx6mbH2gsVfGSB/3TbZjiKV8JYDEWkU=
 github.com/nextmicro/logger v1.0.5 h1:f9+sYxn03t9wDXJ3XEbcxOU5lHpajHJI7qFyruheDc8=
 github.com/nextmicro/logger v1.0.5/go.mod h1:A+cFz+/6qaatOXztSi8LDv1SuJlsL26pXbEgd0BQUxs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=

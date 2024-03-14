@@ -6,7 +6,7 @@ require (
 	github.com/go-kratos/aegis v0.2.0
 	github.com/go-kratos/kratos/v2 v2.7.2
 	github.com/nextmicro/gokit/timex v1.0.1
-	github.com/nextmicro/gokit/trace v1.0.10
+	github.com/nextmicro/gokit/trace v1.0.11
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.24.0
 	google.golang.org/grpc v1.62.0
