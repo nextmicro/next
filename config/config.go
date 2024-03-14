@@ -13,7 +13,10 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/nextmicro/logger"
 	"github.com/nextmicro/next/adapter/config/nacos"
+	"github.com/nextmicro/next/adapter/logger/kratos"
+	adapterNacos "github.com/nextmicro/next/adapter/logger/nacos"
 	"github.com/nextmicro/next/api/config/v1"
 	util "github.com/nextmicro/next/internal/pkg/file"
 	kUtil "github.com/nextmicro/next/pkg/env"
@@ -67,9 +70,14 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 	}
 
 	if cfg.GetCacheDir() == "" && kUtil.IsDev() {
-		cfg.CacheDir = fmt.Sprintf("%s/runtime/nacos", kUtil.WorkDir())
+		cfg.CacheDir = fmt.Sprintf("%s/runtime/nacos/cache", kUtil.WorkDir())
 	} else if cfg.GetCacheDir() == "" {
-		cfg.CacheDir = fmt.Sprintf("/data/nacos/%s", cfg.DataId)
+		cfg.CacheDir = fmt.Sprintf("/data/nacos/%s/cache", cfg.DataId)
+	}
+	if cfg.GetLogDir() == "" && kUtil.IsDev() {
+		cfg.LogDir = fmt.Sprintf("%s/runtime/nacos/log", kUtil.WorkDir())
+	} else if cfg.GetLogDir() == "" {
+		cfg.CacheDir = fmt.Sprintf("/data/nacos/%s/log", cfg.DataId)
 	}
 
 	if cfg.CacheDir != "" {
@@ -81,6 +89,18 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 		if !exists {
 			if err := os.MkdirAll(cfg.CacheDir, 0755); err != nil {
 				return nil, fmt.Errorf("failed to create backup path: %s, error: %s", cfg.CacheDir, err)
+			}
+		}
+	}
+	if cfg.LogDir != "" {
+		// 判断备份目录是否存在
+		exists, err := util.Exists(cfg.LogDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check log dir path: %s, error: %s", cfg.LogDir, err)
+		}
+		if !exists {
+			if err := os.MkdirAll(cfg.LogDir, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create log dir path: %s, error: %s", cfg.CacheDir, err)
 			}
 		}
 	}
@@ -119,8 +139,9 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 		constant.WithTimeoutMs(duration),
 		constant.WithCacheDir(cfg.GetCacheDir()),
 		constant.WithNamespaceId(cfg.GetNamespace()),
-		constant.WithNotLoadCacheAtStart(true),
+		constant.WithNotLoadCacheAtStart(cfg.NotLoadCacheAtStart),
 		constant.WithLogLevel(cfg.LogLevel),
+		constant.WithLogDir(cfg.LogDir),
 		constant.WithOpenKMS(false),
 	)
 	client, err := clients.NewConfigClient(
@@ -129,6 +150,8 @@ func (c *Config) buildNacosSource() ([]kConfig.Source, error) {
 			ServerConfigs: serverConfigs,
 		},
 	)
+
+	adapterNacos.NewNacos(logger.DefaultLogger).SetLogger() // adapter nacos logger
 	if err != nil {
 		return nil, fmt.Errorf("failed to create nacos client, error: %s", err)
 	}
@@ -144,6 +167,8 @@ func Init(filename string) (kConfig.Config, error) {
 		path:     filepath.Dir(filename),
 		filename: filename,
 	}
+
+	kratos.New(logger.DefaultLogger).SetLogger() // adapter kratos logger
 
 	// build file source
 	source := cc.buildFileSource()

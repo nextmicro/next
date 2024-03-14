@@ -137,6 +137,8 @@ message Nacos {
   string log_level = 11;
   // nacos format, default=yaml
   string format = 12;
+  // not load cache at
+  bool not_load_cache_at_start = 13;
 }
 
 // middleware config
