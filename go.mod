@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-kratos/aegis v0.2.0
-	github.com/go-kratos/kratos/v2 v2.7.2
+	github.com/go-kratos/kratos/v2 v2.7.3
 	github.com/nextmicro/gokit/timex v1.0.1
 	github.com/nextmicro/gokit/trace v1.0.11
 	github.com/stretchr/testify v1.8.4
@@ -16,13 +16,13 @@ require (
 require (
 	github.com/IBM/sarama v1.42.1
 	github.com/go-kratos/kratos/contrib/metrics/prometheus/v2 v2.0.0-20240311125537-f566bdc2e6ff
-	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20240311125537-f566bdc2e6ff
-	github.com/go-kratos/kratos/contrib/registry/etcd/v2 v2.0.0-20240311125537-f566bdc2e6ff
+	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20240322155018-41971ffa647a
+	github.com/go-kratos/kratos/contrib/registry/etcd/v2 v2.0.0-20240322155018-41971ffa647a
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/consul/api v1.26.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
-	github.com/nextmicro/logger v1.0.5
+	github.com/nextmicro/logger v1.0.7
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	go.etcd.io/etcd/client/v3 v3.5.11

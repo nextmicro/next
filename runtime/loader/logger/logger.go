@@ -87,6 +87,9 @@ func mergeMap(m1, m2 map[string]string) map[string]string {
 
 func options(c *config.Logger) []log.Option {
 	var opts []log.Option
+	if c.FileName != "" {
+		opts = append(opts, log.WithFilename(c.FileName))
+	}
 	if c.Path != "" {
 		opts = append(opts, log.WithPath(c.Path))
 	}
@@ -95,6 +98,24 @@ func options(c *config.Logger) []log.Option {
 	}
 	if c.File {
 		opts = append(opts, log.WithMode(log.FileMode))
+	}
+	if c.MaxSize > 0 {
+		opts = append(opts, log.WithMaxSize(int(c.MaxSize)))
+	}
+	if c.MaxBackups > 0 {
+		opts = append(opts, log.WithMaxBackups(int(c.MaxBackups)))
+	}
+	if c.Compress {
+		opts = append(opts, log.WithCompress(c.Compress))
+	}
+	if c.KeepHours > 0 {
+		opts = append(opts, log.WithKeepHours(int(c.KeepHours)))
+	}
+	if c.KeepDays > 0 {
+		opts = append(opts, log.WithKeepDays(int(c.KeepDays)))
+	}
+	if c.Rotation != "" {
+		opts = append(opts, log.WithRotation(c.Rotation))
 	}
 	md := make(map[string]interface{})
 	for k, v := range c.Metadata {

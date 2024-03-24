@@ -143,6 +143,18 @@ func PathPrefix(prefix string) ServerOption {
 	}
 }
 
+func NotFoundHandler(handler http.Handler) ServerOption {
+	return func(s *Server) {
+		s.router.NotFoundHandler = handler
+	}
+}
+
+func MethodNotAllowedHandler(handler http.Handler) ServerOption {
+	return func(s *Server) {
+		s.router.MethodNotAllowedHandler = handler
+	}
+}
+
 // Server is an HTTP server wrapper.
 type Server struct {
 	*http.Server
@@ -180,6 +192,8 @@ func NewServer(opts ...ServerOption) *Server {
 		strictSlash: true,
 		router:      mux.NewRouter(),
 	}
+	srv.router.NotFoundHandler = http.DefaultServeMux
+	srv.router.MethodNotAllowedHandler = http.DefaultServeMux
 
 	// apply config
 	srv.applyConfig()
@@ -189,8 +203,6 @@ func NewServer(opts ...ServerOption) *Server {
 	srv.buildMiddlewareChain()
 
 	srv.router.StrictSlash(srv.strictSlash)
-	srv.router.NotFoundHandler = http.DefaultServeMux
-	srv.router.MethodNotAllowedHandler = http.DefaultServeMux
 	srv.router.Use(srv.filter())
 	srv.Server = &http.Server{
 		Handler:   FilterChain(srv.filters...)(srv.router),

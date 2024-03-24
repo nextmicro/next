@@ -1,8 +1,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,6 +38,33 @@ func TestResponse_Write_FallsBackToDefaultStatus(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 4, n)
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestResponseUnwrap(t *testing.T) {
+	res := httptest.NewRecorder()
+	f := func(rw http.ResponseWriter, r *http.Request, a interface{}) error {
+		u, ok := rw.(interface {
+			Unwrap() http.ResponseWriter
+		})
+		if !ok {
+			return errors.New("can not unwrap")
+		}
+		w := u.Unwrap()
+		if !reflect.DeepEqual(w, res) {
+			return errors.New("underlying response writer not equal")
+		}
+		return nil
+	}
+
+	w := wrapper{
+		router: &router{srv: &Server{enc: f}},
+		req:    nil,
+		res:    NewResponse(res),
+	}
+	err := w.Result(200, "ok")
+	if err != nil {
+		t.Errorf("expected %v, got %v", nil, err)
+	}
 }
 
 func TestResponse_Write_UsesSetResponseCode(t *testing.T) {

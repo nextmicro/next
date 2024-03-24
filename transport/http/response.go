@@ -50,6 +50,8 @@ func (r *Response) StatusCode() int {
 	return r.Status
 }
 
+func (r *Response) Unwrap() http.ResponseWriter { return r.Writer }
+
 // Write writes the data to the connection as part of an HTTP reply.
 func (r *Response) Write(b []byte) (n int, err error) {
 	r.Writer.WriteHeader(r.StatusCode())
