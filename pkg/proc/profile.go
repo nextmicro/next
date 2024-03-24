@@ -50,8 +50,12 @@ func (p *Profile) startBlockProfile() {
 	runtime.SetBlockProfileRate(1)
 	logger.Infof("profile: block profiling enabled, %s", fn)
 	p.closers = append(p.closers, func() {
-		pprof.Lookup("block").WriteTo(f, 0)
-		f.Close()
+		if err = pprof.Lookup("block").WriteTo(f, 0); err != nil {
+			logger.Errorf("profile: could not write block profile: %v", err)
+		}
+		if err = f.Close(); err != nil {
+			logger.Errorf("profile: could not close block profile file: %v", err)
+		}
 		runtime.SetBlockProfileRate(0)
 		logger.Infof("profile: block profiling disabled, %s", fn)
 	})
@@ -66,10 +70,15 @@ func (p *Profile) startCpuProfile() {
 	}
 
 	logger.Infof("profile: cpu profiling enabled, %s", fn)
-	pprof.StartCPUProfile(f)
+	if err = pprof.StartCPUProfile(f); err != nil {
+		logger.Errorf("profile: could not start cpu profile: %v", err)
+		return
+	}
 	p.closers = append(p.closers, func() {
 		pprof.StopCPUProfile()
-		f.Close()
+		if err = f.Close(); err != nil {
+			logger.Errorf("profile: could not close cpu profile file: %v", err)
+		}
 		logger.Infof("profile: cpu profiling disabled, %s", fn)
 	})
 }
@@ -86,8 +95,12 @@ func (p *Profile) startMemProfile() {
 	runtime.MemProfileRate = DefaultMemProfileRate
 	logger.Infof("profile: memory profiling enabled (rate %d), %s", runtime.MemProfileRate, fn)
 	p.closers = append(p.closers, func() {
-		pprof.Lookup("heap").WriteTo(f, 0)
-		f.Close()
+		if err = pprof.Lookup("heap").WriteTo(f, 0); err != nil {
+			logger.Errorf("profile: could not write memory profile: %v", err)
+		}
+		if err = f.Close(); err != nil {
+			logger.Errorf("profile: could not close memory profile file: %v", err)
+		}
 		runtime.MemProfileRate = old
 		logger.Infof("profile: memory profiling disabled, %s", fn)
 	})
@@ -105,9 +118,12 @@ func (p *Profile) startMutexProfile() {
 	logger.Infof("profile: mutex profiling enabled, %s", fn)
 	p.closers = append(p.closers, func() {
 		if mp := pprof.Lookup("mutex"); mp != nil {
-			mp.WriteTo(f, 0)
+			err = mp.WriteTo(f, 0)
 		}
-		f.Close()
+		err = f.Close()
+		if err != nil {
+			logger.Errorf("profile: could not close mutex profile file: %v", err)
+		}
 		runtime.SetMutexProfileFraction(0)
 		logger.Infof("profile: mutex profiling disabled, %s", fn)
 	})
@@ -124,9 +140,12 @@ func (p *Profile) startThreadCreateProfile() {
 	logger.Infof("profile: threadcreate profiling enabled, %s", fn)
 	p.closers = append(p.closers, func() {
 		if mp := pprof.Lookup("threadcreate"); mp != nil {
-			mp.WriteTo(f, 0)
+			err = mp.WriteTo(f, 0)
 		}
-		f.Close()
+		err = f.Close()
+		if err != nil {
+			logger.Errorf("profile: could not close threadcreate profile file: %v", err)
+		}
 		logger.Infof("profile: threadcreate profiling disabled, %s", fn)
 	})
 }
@@ -187,7 +206,9 @@ func StartProfile() Stopper {
 		prof.Stop()
 
 		signal.Reset()
-		syscall.Kill(os.Getpid(), syscall.SIGINT)
+		if err := syscall.Kill(os.Getpid(), syscall.SIGINT); err != nil {
+			logger.Errorf("profile: failed to send interrupt signal: %v", err)
+		}
 	}()
 
 	return &prof
