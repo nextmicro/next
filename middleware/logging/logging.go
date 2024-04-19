@@ -53,6 +53,41 @@ func mergeFields(fields map[string]interface{}, m map[string]string) map[string]
 	return fields
 }
 
+func pathMatch(path string, operation string) bool {
+	return path == operation
+}
+
+// matchRoute 检查路由是否需要忽略
+func matchRoute(route string, ignoredRoutes []string) bool {
+	for _, path := range ignoredRoutes {
+		if pathMatch(path, route) {
+			return true
+		}
+	}
+	return false
+}
+
+// injectMetadata injects the metadata into the fields
+func injectMetadata(rules []Metadata, md metadata.Metadata) map[string]string {
+	fields := make(map[string]string)
+	if len(rules) == 0 || len(md) == 0 {
+		return fields
+	}
+
+	// inject metadata
+	for _, rule := range rules {
+		if md.Get(rule.Key) != "" {
+			if rule.Rename != "" {
+				fields[rule.Rename] = md.Get(rule.Key)
+			} else {
+				fields[rule.Key] = md.Get(rule.Key)
+			}
+		}
+	}
+
+	return fields
+}
+
 func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	v := durationpb.New(time.Millisecond * 300)
 	options := &v1.Logging{
@@ -75,6 +110,22 @@ func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	if options.SlowThreshold != nil && options.SlowThreshold.AsDuration() > 0 {
 		opts = append(opts, WithSlowThreshold(options.SlowThreshold.AsDuration()))
 	}
+	if len(options.IgnoredRoutes) > 0 {
+		opts = append(opts, WithIgnoredRoutes(options.IgnoredRoutes))
+	}
+	if options.AccessLevel != "" {
+		opts = append(opts, WithAccessLevel(logger.ParseLevel(options.AccessLevel)))
+	}
+	if len(options.Metadata) > 0 {
+		_md := make([]Metadata, 0, len(options.Metadata))
+		for _, md := range options.Metadata {
+			_md = append(_md, Metadata{
+				Key:    md.Key,
+				Rename: md.Rename,
+			})
+		}
+		opts = append(opts, WithMetadata(_md))
+	}
 
 	return Client(opts...), nil
 }
@@ -82,8 +133,9 @@ func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 // Client is an client logging middleware.
 func Client(opts ...Option) middleware.Middleware {
 	cfg := Options{
-		timeFormat:    defaultFormat,          // 默认时间格式
-		logger:        logger.DefaultLogger,   // 默认日志
+		timeFormat:    defaultFormat,        // 默认时间格式
+		logger:        logger.DefaultLogger, // 默认日志
+		accessLevel:   logger.InfoLevel,
 		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
@@ -110,6 +162,11 @@ func Client(opts ...Option) middleware.Middleware {
 			if info, ok := transport.FromClientContext(ctx); ok {
 				kind = info.Kind().String()
 				route = info.Operation()
+			}
+
+			// ignore route
+			if matchRoute(route, cfg.ignoredRoutes) {
+				return handler(ctx, req)
 			}
 
 			resp, err := handler(ctx, req)
@@ -140,6 +197,11 @@ func Client(opts ...Option) middleware.Middleware {
 				fields["reason"] = se.Reason
 			}
 
+			// inject metadata
+			if md, ok := metadata.FromClientContext(ctx); ok {
+				fields = mergeFields(fields, injectMetadata(cfg.Metadata, md))
+			}
+
 			if cfg.handler != nil {
 				fields = mergeFields(fields, cfg.handler(ctx, req))
 			}
@@ -148,13 +210,18 @@ func Client(opts ...Option) middleware.Middleware {
 
 			// show log
 			if cfg.slowThreshold > 0 && duration > cfg.slowThreshold && err != nil {
-				_log.Error(kind + " server slow")
+				_log.Error(kind + " client slow")
 			} else if cfg.slowThreshold > 0 && duration > cfg.slowThreshold {
-				_log.Info(kind + " server slow")
+				_log.Info(kind + " client slow")
 			} else if err != nil {
-				_log.Error(kind + " server")
+				_log.Error(kind + " client")
 			} else {
-				_log.Info(kind + " server")
+				switch cfg.accessLevel {
+				case logger.InfoLevel:
+					_log.Info(kind + " client")
+				default:
+					_log.Debug(kind + " client")
+				}
 			}
 
 			return resp, err
@@ -185,6 +252,22 @@ func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 	if options.SlowThreshold != nil && options.SlowThreshold.AsDuration() > 0 {
 		opts = append(opts, WithSlowThreshold(options.SlowThreshold.AsDuration()))
 	}
+	if len(options.IgnoredRoutes) > 0 {
+		opts = append(opts, WithIgnoredRoutes(options.IgnoredRoutes))
+	}
+	if options.AccessLevel != "" {
+		opts = append(opts, WithAccessLevel(logger.ParseLevel(options.AccessLevel)))
+	}
+	if len(options.Metadata) > 0 {
+		_md := make([]Metadata, 0, len(options.Metadata))
+		for _, md := range options.Metadata {
+			_md = append(_md, Metadata{
+				Key:    md.Key,
+				Rename: md.Rename,
+			})
+		}
+		opts = append(opts, WithMetadata(_md))
+	}
 
 	return Server(opts...), nil
 }
@@ -195,6 +278,7 @@ func Server(opts ...Option) middleware.Middleware {
 		timeFormat:    defaultFormat,          // 默认时间格式
 		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
 		logger:        logger.DefaultLogger,   // 默认日志
+		accessLevel:   logger.InfoLevel,
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
 		},
@@ -220,6 +304,12 @@ func Server(opts ...Option) middleware.Middleware {
 				kind = info.Kind().String()
 				route = info.Operation()
 			}
+
+			// ignore route
+			if matchRoute(route, cfg.ignoredRoutes) {
+				return handler(ctx, req)
+			}
+
 			if md, ok := metadata.FromServerContext(ctx); ok {
 				if v := md.Get("x-md-local-caller"); v != "" {
 					caller = v
@@ -244,6 +334,11 @@ func Server(opts ...Option) middleware.Middleware {
 				fields["error"] = extractError(err)
 			}
 
+			// inject metadata
+			if md, ok := metadata.FromServerContext(ctx); ok {
+				fields = mergeFields(fields, injectMetadata(cfg.Metadata, md))
+			}
+
 			if cfg.handler != nil {
 				fields = mergeFields(fields, cfg.handler(ctx, req))
 			}
@@ -257,7 +352,12 @@ func Server(opts ...Option) middleware.Middleware {
 			} else if err != nil {
 				_log.Error(kind + " server")
 			} else {
-				_log.Info(kind + " server")
+				switch cfg.accessLevel {
+				case logger.InfoLevel:
+					_log.Info(kind + " server")
+				default:
+					_log.Debug(kind + " server")
+				}
 			}
 
 			return resp, err

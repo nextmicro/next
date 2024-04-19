@@ -8,7 +8,15 @@ import "google/protobuf/duration.proto";
 
 // logging middleware config.
 message Logging {
-  bool disabled  = 1; // disable logging middleware, default is false
+  bool disabled = 1; // disable logging middleware, default is false
   string time_format = 2; // time format, default is 2006-01-02T15:04:05.999Z0700
   google.protobuf.Duration slow_threshold = 3; // slow threshold, default is 300ms
+  string access_level = 4; // access level, default is info
+  repeated string ignored_routes = 5; // specify routes to be ignored
+  repeated Metadata metadata = 6; // specify metadata keys to print and rename
+}
+
+message Metadata {
+  string key = 1; // metadata key
+  string rename = 2; // renamed key
 }

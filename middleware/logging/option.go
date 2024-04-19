@@ -20,7 +20,15 @@ type Options struct {
 	timeFormat    string
 	slowThreshold time.Duration
 	logger        logger.Logger
+	accessLevel   logger.Level
+	ignoredRoutes []string
+	Metadata      []Metadata
 	handler       func(ctx context.Context, req any) map[string]string
+}
+
+type Metadata struct {
+	Key    string // key
+	Rename string // rename
 }
 
 // WithDisabled set disabled metrics.
@@ -51,9 +59,30 @@ func WithLogger(log logger.Logger) Option {
 	}
 }
 
+// WithAccessLevel sets the access level
+func WithAccessLevel(level logger.Level) Option {
+	return func(o *Options) {
+		o.accessLevel = level
+	}
+}
+
 // WithHandler sets the handler
 func WithHandler(handler func(ctx context.Context, req any) map[string]string) Option {
 	return func(o *Options) {
 		o.handler = handler
+	}
+}
+
+// WithIgnoredRoutes sets the ignored routes
+func WithIgnoredRoutes(routes []string) Option {
+	return func(o *Options) {
+		o.ignoredRoutes = append(o.ignoredRoutes, routes...)
+	}
+}
+
+// WithMetadata sets the metadata
+func WithMetadata(md []Metadata) Option {
+	return func(o *Options) {
+		o.Metadata = append(o.Metadata, md...)
 	}
 }
