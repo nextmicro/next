@@ -135,7 +135,7 @@ func Client(opts ...Option) middleware.Middleware {
 	cfg := Options{
 		timeFormat:    defaultFormat,        // 默认时间格式
 		logger:        logger.DefaultLogger, // 默认日志
-		accessLevel:   logger.InfoLevel,
+		accessLevel:   logger.DebugLevel,
 		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
@@ -216,12 +216,7 @@ func Client(opts ...Option) middleware.Middleware {
 			} else if err != nil {
 				_log.Error(kind + " client")
 			} else {
-				switch cfg.accessLevel {
-				case logger.InfoLevel:
-					_log.Info(kind + " client")
-				default:
-					_log.Debug(kind + " client")
-				}
+				_log.Debug(kind + " client")
 			}
 
 			return resp, err
@@ -278,7 +273,7 @@ func Server(opts ...Option) middleware.Middleware {
 		timeFormat:    defaultFormat,          // 默认时间格式
 		slowThreshold: time.Millisecond * 300, // 默认慢日志时间
 		logger:        logger.DefaultLogger,   // 默认日志
-		accessLevel:   logger.InfoLevel,
+		accessLevel:   logger.DebugLevel,
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
 		},
@@ -352,12 +347,7 @@ func Server(opts ...Option) middleware.Middleware {
 			} else if err != nil {
 				_log.Error(kind + " server")
 			} else {
-				switch cfg.accessLevel {
-				case logger.InfoLevel:
-					_log.Info(kind + " server")
-				default:
-					_log.Debug(kind + " server")
-				}
+				_log.Debug(kind + " server")
 			}
 
 			return resp, err
