@@ -178,12 +178,12 @@ func Client(opts ...Option) middleware.Middleware {
 			}
 
 			fields := map[string]interface{}{
-				"start":     startTime.Format(cfg.timeFormat),
-				"kind":      "client",
-				"component": kind,
-				"route":     route,
-				"duration":  timex.Duration(duration),
-				"callee":    callee,
+				"start":          startTime.Format(cfg.timeFormat),
+				"kind":           "client",
+				"component":      kind,
+				"route":          route,
+				"duration":       timex.Duration(duration),
+				"callee_service": callee,
 			}
 			if nodeAddress != "" {
 				fields["callee.address"] = nodeAddress
@@ -314,12 +314,12 @@ func Server(opts ...Option) middleware.Middleware {
 			resp, err := handler(ctx, req)
 			duration := time.Since(startTime)
 			fields := map[string]interface{}{
-				"start":     startTime.Format(cfg.timeFormat),
-				"kind":      "server",
-				"component": kind,
-				"route":     route,
-				"duration":  timex.Duration(duration),
-				"caller":    caller,
+				"start":          startTime.Format(cfg.timeFormat),
+				"kind":           "server",
+				"component":      kind,
+				"route":          route,
+				"duration":       timex.Duration(duration),
+				"caller_service": caller,
 			}
 			if se := errors.FromError(err); se != nil {
 				fields["code"] = se.Code
