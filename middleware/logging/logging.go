@@ -45,6 +45,17 @@ func extractError(err error) string {
 	return fmt.Sprintf("%+v", err)
 }
 
+// extractArgs returns the string of the req
+func extractArgs(req interface{}) string {
+	if redacter, ok := req.(Redacter); ok {
+		return redacter.Redact()
+	}
+	if stringer, ok := req.(fmt.Stringer); ok {
+		return stringer.String()
+	}
+	return fmt.Sprintf("%+v", req)
+}
+
 // mergeFields merges the fields
 func mergeFields(fields map[string]interface{}, m map[string]string) map[string]interface{} {
 	for k, v := range m {
@@ -116,6 +127,12 @@ func injectionClient(c *config.Middleware) (middleware.Middleware, error) {
 	if options.AccessLevel != "" {
 		opts = append(opts, WithAccessLevel(logger.ParseLevel(options.AccessLevel)))
 	}
+	if options.DumpRequest {
+		opts = append(opts, WithDumpRequest(options.DumpRequest))
+	}
+	if options.DumpResponse {
+		opts = append(opts, WithDumpResp(options.DumpResponse))
+	}
 	if len(options.Metadata) > 0 {
 		_md := make([]Metadata, 0, len(options.Metadata))
 		for _, md := range options.Metadata {
@@ -140,6 +157,8 @@ func Client(opts ...Option) middleware.Middleware {
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
 		},
+		dumpReq:  false,
+		dumpResp: false,
 	}
 	for _, o := range opts {
 		o(&cfg)
@@ -184,6 +203,12 @@ func Client(opts ...Option) middleware.Middleware {
 				"route":          route,
 				"duration":       timex.Duration(duration),
 				"callee_service": callee,
+			}
+			if cfg.dumpReq {
+				fields["request"] = extractArgs(req)
+			}
+			if cfg.dumpResp {
+				fields["response"] = extractArgs(resp)
 			}
 			if nodeAddress != "" {
 				fields["callee.address"] = nodeAddress
@@ -253,6 +278,12 @@ func injectionServer(c *config.Middleware) (middleware.Middleware, error) {
 	if options.AccessLevel != "" {
 		opts = append(opts, WithAccessLevel(logger.ParseLevel(options.AccessLevel)))
 	}
+	if options.DumpRequest {
+		opts = append(opts, WithDumpRequest(options.DumpRequest))
+	}
+	if options.DumpResponse {
+		opts = append(opts, WithDumpResp(options.DumpResponse))
+	}
 	if len(options.Metadata) > 0 {
 		_md := make([]Metadata, 0, len(options.Metadata))
 		for _, md := range options.Metadata {
@@ -277,6 +308,8 @@ func Server(opts ...Option) middleware.Middleware {
 		handler: func(ctx context.Context, req any) map[string]string {
 			return make(map[string]string)
 		},
+		dumpReq:  false,
+		dumpResp: false,
 	}
 	for _, o := range opts {
 		o(&cfg)
@@ -320,6 +353,12 @@ func Server(opts ...Option) middleware.Middleware {
 				"route":          route,
 				"duration":       timex.Duration(duration),
 				"caller_service": caller,
+			}
+			if cfg.dumpReq {
+				fields["request"] = extractArgs(req)
+			}
+			if cfg.dumpResp {
+				fields["response"] = extractArgs(resp)
 			}
 			if se := errors.FromError(err); se != nil {
 				fields["code"] = se.Code

@@ -24,6 +24,8 @@ type Options struct {
 	ignoredRoutes []string
 	Metadata      []Metadata
 	handler       func(ctx context.Context, req any) map[string]string
+	dumpReq       bool
+	dumpResp      bool
 }
 
 type Metadata struct {
@@ -84,5 +86,17 @@ func WithIgnoredRoutes(routes []string) Option {
 func WithMetadata(md []Metadata) Option {
 	return func(o *Options) {
 		o.Metadata = append(o.Metadata, md...)
+	}
+}
+
+func WithDumpRequest(dump bool) Option {
+	return func(o *Options) {
+		o.dumpReq = dump
+	}
+}
+
+func WithDumpResp(dump bool) Option {
+	return func(o *Options) {
+		o.dumpResp = dump
 	}
 }

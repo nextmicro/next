@@ -14,6 +14,8 @@ message Logging {
   string access_level = 4; // access level, default is info
   repeated string ignored_routes = 5; // specify routes to be ignored
   repeated Metadata metadata = 6; // specify metadata keys to print and rename
+  bool dump_request = 7; // dump request body, default is false
+  bool dump_response = 8; // dump response body, default is false
 }
 
 message Metadata {
