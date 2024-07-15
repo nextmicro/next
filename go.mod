@@ -23,6 +23,7 @@ require (
 	github.com/hashicorp/consul/api v1.26.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
 	github.com/nextmicro/logger v1.0.7
+	github.com/nsqio/go-nsq v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	go.etcd.io/etcd/client/v3 v3.5.11
