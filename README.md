@@ -1,5 +1,3 @@
-# kratos
-基于 kratos  封装的业务框架
+# NextMicro
 
-## 使用例子
-请看[next.bff.layout](https://github.com/nextmicro/next.bff.layout)
+> 下一代微服务云原生框架
