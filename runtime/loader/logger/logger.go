@@ -58,7 +58,7 @@ func (loader *logger) Init(opts ...loader.Option) error {
 		"env":         env.DeployEnvironment(),
 		"instance_id": env.Hostname(),
 	}
-	cfg.Metadata = mergeMap(metadata, cfg.GetMetadata())
+	logCfg.Metadata = mergeMap(metadata, cfg.GetMetadata())
 
 	if logCfg.Path == "" && env.DeployEnvironment() == env.Dev {
 		logCfg.Path = filepath.Join(env.WorkDir(), "runtime", "logs")
