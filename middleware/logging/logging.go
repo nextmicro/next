@@ -204,10 +204,10 @@ func Client(opts ...Option) middleware.Middleware {
 				"duration":       timex.Duration(duration),
 				"callee_service": callee,
 			}
-			if cfg.dumpReq {
+			if cfg.dumpReq || err != nil {
 				fields["request"] = extractArgs(req)
 			}
-			if cfg.dumpResp {
+			if cfg.dumpResp || err != nil {
 				fields["response"] = extractArgs(resp)
 			}
 			if nodeAddress != "" {
@@ -354,10 +354,10 @@ func Server(opts ...Option) middleware.Middleware {
 				"duration":       timex.Duration(duration),
 				"caller_service": caller,
 			}
-			if cfg.dumpReq {
+			if cfg.dumpReq || err != nil {
 				fields["request"] = extractArgs(req)
 			}
-			if cfg.dumpResp {
+			if cfg.dumpResp || err != nil {
 				fields["response"] = extractArgs(resp)
 			}
 			if se := errors.FromError(err); se != nil {
