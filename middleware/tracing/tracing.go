@@ -12,6 +12,7 @@ import (
 	configv1 "github.com/nextmicro/next/api/config/v1"
 	v1 "github.com/nextmicro/next/api/middleware/tracing/v1"
 	chain "github.com/nextmicro/next/middleware"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
@@ -52,7 +53,7 @@ func injectionClient(c *configv1.Middleware) (middleware.Middleware, error) {
 func Client(opts ...Option) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
-		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
+		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}, b3.New()),
 	}
 	for _, opt := range opts {
 		opt.apply(&cfg)
@@ -130,7 +131,7 @@ func injectionServer(c *configv1.Middleware) (middleware.Middleware, error) {
 func Server(opts ...Option) middleware.Middleware {
 	cfg := options{
 		tracerProvider: otel.GetTracerProvider(),
-		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}),
+		propagators:    propagation.NewCompositeTextMapPropagator(Metadata{}, propagation.Baggage{}, propagation.TraceContext{}, b3.New()),
 	}
 	for _, opt := range opts {
 		opt.apply(&cfg)
