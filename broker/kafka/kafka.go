@@ -33,7 +33,6 @@ const namespace = "kafka"
 type (
 	producerConfigKey struct{}
 	consumerConfigKey struct{}
-	messageKeyHeader  = string
 )
 
 // MessageKeyHeader 是发布消息时用于设置 kafka 分区键的 Header key。

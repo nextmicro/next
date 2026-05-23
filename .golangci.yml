@@ -1,0 +1,18 @@
+run:
+  timeout: 5m
+
+issues:
+  exclude-rules:
+    # v2 过渡期：init 自注册与 DefaultRegistry 回退 intentionally 使用 Deprecated API
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+      path: middleware/.*/factory\.go
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+      path: middleware/logging/logging\.go
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+      path: (naxt\.go|transport/http\.go|transport/grpc\.go|components/builtin\.go|runtime/option\.go)

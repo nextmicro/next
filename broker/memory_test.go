@@ -16,7 +16,7 @@ func TestMemoryBroker_PublishSubscribe(t *testing.T) {
 	if err := b.Connect(ctx); err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer b.Disconnect(ctx)
+	defer func() { _ = b.Disconnect(ctx) }()
 
 	var received atomic.Int32
 	sub, err := b.Subscribe(ctx, "test", func(ctx context.Context, e broker.Event) error {
@@ -54,7 +54,7 @@ func TestMemoryBroker_CloseSubscription(t *testing.T) {
 	b := broker.NewMemory()
 	ctx := context.Background()
 	_ = b.Connect(ctx)
-	defer b.Disconnect(ctx)
+	defer func() { _ = b.Disconnect(ctx) }()
 
 	var received atomic.Int32
 	sub, _ := b.Subscribe(ctx, "t", func(context.Context, broker.Event) error {
@@ -83,7 +83,7 @@ func TestMemoryBroker_QueueGroupDelivery(t *testing.T) {
 	b := broker.NewMemory()
 	ctx := context.Background()
 	_ = b.Connect(ctx)
-	defer b.Disconnect(ctx)
+	defer func() { _ = b.Disconnect(ctx) }()
 
 	var groupAReceived atomic.Int32
 	var groupBReceived atomic.Int32
@@ -123,7 +123,7 @@ func TestMemoryBroker_PublishHeaders(t *testing.T) {
 	b := broker.NewMemory()
 	ctx := context.Background()
 	_ = b.Connect(ctx)
-	defer b.Disconnect(ctx)
+	defer func() { _ = b.Disconnect(ctx) }()
 
 	var gotHeader broker.Header
 	_, _ = b.Subscribe(ctx, "t", func(_ context.Context, e broker.Event) error {
@@ -177,7 +177,7 @@ func TestWrapper_AppliedInOrder(t *testing.T) {
 	b := broker.NewMemory(broker.Wrap(tag("outer"), tag("inner")))
 	ctx := context.Background()
 	_ = b.Connect(ctx)
-	defer b.Disconnect(ctx)
+	defer func() { _ = b.Disconnect(ctx) }()
 
 	_, _ = b.Subscribe(ctx, "t", func(context.Context, broker.Event) error { return nil })
 	_ = b.Publish(ctx, "t", &broker.Message{Body: []byte("x")})
