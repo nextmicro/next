@@ -10,13 +10,15 @@ import (
 	"github.com/go-kratos/kratos/v2/metadata"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/nextmicro/gokit/trace/httpconv"
-	thttp "github.com/nextmicro/next/transport/http"
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/proto"
 )
+
+const serviceHeader = "x-md-service-name"
 
 func setClientSpan(ctx context.Context, span trace.Span, request any) {
 	attrs := make([]attribute.KeyValue, 0, 3)
@@ -29,7 +31,7 @@ func setClientSpan(ctx context.Context, span trace.Span, request any) {
 		rpcKind = tr.Kind().String()
 		switch tr.Kind() {
 		case transport.KindHTTP:
-			if ht, ok := tr.(thttp.Transporter); ok {
+			if ht, ok := tr.(khttp.Transporter); ok {
 				attrs = httpconv.ClientRequest(ht.Request())
 				remote = ht.Request().Host
 				attrs = append(attrs, httpconv.NetAttributesFromHTTPRequest("tcp", ht.Request())...)
@@ -74,7 +76,7 @@ func setServerSpan(ctx context.Context, span trace.Span, request any) {
 		rpcKind = tr.Kind().String()
 		switch tr.Kind() {
 		case transport.KindHTTP:
-			if ht, ok := tr.(thttp.Transporter); ok {
+			if ht, ok := tr.(khttp.Transporter); ok {
 				attrs = append(attrs, httpconv.NetAttributesFromHTTPRequest("tcp", ht.Request())...)
 				attrs = append(attrs, httpconv.EndUserAttributesFromHTTPRequest(ht.Request())...)
 				attrs = append(attrs, httpconv.HTTPServerAttributesFromHTTPRequest("", ht.PathTemplate(), ht.Request())...)

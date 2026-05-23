@@ -3,242 +3,225 @@ package broker
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"sync"
-	"time"
-
-	"github.com/nextmicro/logger"
-	maddr "github.com/nextmicro/next/pkg/addr"
-	"github.com/nextmicro/next/pkg/net"
 
 	"github.com/google/uuid"
 )
 
-type memoryBroker struct {
-	opts *Options
+// MemoryBroker 是 broker.Broker 的进程内参考实现，主要用于测试与示例。
+// 不持久化、不跨进程、不保证消息顺序在多订阅者之间一致。
+type MemoryBroker struct {
+	opts Options
 
-	addr string
-	sync.RWMutex
+	mu          sync.RWMutex
 	connected   bool
-	Subscribers map[string][]*memorySubscriber
+	subscribers map[string]map[string]*memorySubscription // topic -> subID -> sub
 }
 
-func NewMemoryBroker(opts ...Option) Broker {
-	options := NewOptions(opts...)
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	_memoryBroker := &memoryBroker{
-		opts:        options,
-		Subscribers: make(map[string][]*memorySubscriber),
+// NewMemory 构造一个进程内内存 broker，应用 Wrappers 链。
+func NewMemory(opts ...Option) Broker {
+	o := NewOptions(opts...)
+	b := &MemoryBroker{
+		opts:        o,
+		subscribers: make(map[string]map[string]*memorySubscription),
 	}
-
-	b := Broker(_memoryBroker)
-
-	// wrap in reverse
-	for i := len(options.Wrappers); i > 0; i-- {
-		b = options.Wrappers[i-1](b)
+	var br Broker = b
+	for i := len(o.Wrappers) - 1; i >= 0; i-- {
+		br = o.Wrappers[i](br)
 	}
-
-	return b
+	return br
 }
 
-type memoryEvent struct {
-	opts    *Options
-	topic   string
-	err     error
-	message interface{}
-}
-
-type memorySubscriber struct {
-	id      string
-	topic   string
-	exit    chan bool
-	handler Handler
-	opts    SubscribeOptions
-}
-
-func (m *memoryBroker) Options() Options {
-	return *m.opts
-}
-
-func (m *memoryBroker) Address() string {
-	return m.addr
-}
-
-func (m *memoryBroker) Connect() error {
-	m.Lock()
-	defer m.Unlock()
-
-	if m.connected {
-		return nil
-	}
-
-	// use 127.0.0.1 to avoid scan of all network interfaces
-	addr, err := maddr.Extract("127.0.0.1")
-	if err != nil {
-		return err
-	}
-	i := rand.Intn(20000)
-	// set addr with port
-	addr = net.HostPort(addr, 10000+i)
-
-	m.addr = addr
+// Connect 建立内存连接（实际只是切换状态）。
+func (m *MemoryBroker) Connect(_ context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.connected = true
-
 	return nil
 }
 
-func (m *memoryBroker) Disconnect() error {
-	m.Lock()
-	defer m.Unlock()
-
+// Disconnect 关闭所有订阅并切换为未连接状态。
+func (m *MemoryBroker) Disconnect(_ context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if !m.connected {
 		return nil
 	}
-
-	m.connected = false
-
-	return nil
-}
-
-func (m *memoryBroker) Init(opts ...Option) error {
-	for _, o := range opts {
-		o(m.opts)
-	}
-	return nil
-}
-
-func (m *memoryBroker) Publish(ctx context.Context, topic string, msg *Message, opts ...PublishOption) error {
-	m.RLock()
-	if !m.connected {
-		m.RUnlock()
-		return errors.New("not connected")
-	}
-
-	subs, ok := m.Subscribers[topic]
-	m.RUnlock()
-	if !ok {
-		return nil
-	}
-
-	var v interface{}
-	if m.opts.Codec != nil {
-		buf, err := m.opts.Codec.Marshal(msg)
-		if err != nil {
-			return err
+	for topic, subs := range m.subscribers {
+		for id, sub := range subs {
+			sub.markClosed()
+			delete(subs, id)
 		}
-		v = buf
-	} else {
-		v = msg
+		delete(m.subscribers, topic)
+	}
+	m.connected = false
+	return nil
+}
+
+// Publish 同步将消息分发给所有订阅 topic 的 handler。
+// 多个订阅者时：
+//   - 同一 Queue 组内随机选一个投递（实现为按 map 遍历的第一个）
+//   - 不同 Queue 的订阅者都会收到
+func (m *MemoryBroker) Publish(ctx context.Context, topic string, msg *Message, opts ...PublishOption) error {
+	m.mu.RLock()
+	if !m.connected {
+		m.mu.RUnlock()
+		return ErrNotConnected
+	}
+	bucket := m.subscribers[topic]
+	// 复制订阅者引用，避免持锁调用 handler
+	subs := make([]*memorySubscription, 0, len(bucket))
+	for _, s := range bucket {
+		subs = append(subs, s)
+	}
+	m.mu.RUnlock()
+
+	if len(subs) == 0 {
+		return nil
 	}
 
-	p := &memoryEvent{
-		topic:   topic,
-		message: v,
-		opts:    m.opts,
+	po := NewPublishOptions(opts...)
+	// 合并 publish 时携带的 header 到消息上
+	if len(po.Header) > 0 {
+		if msg.Header == nil {
+			msg.Header = make(Header, len(po.Header))
+		}
+		for k, v := range po.Header {
+			msg.Header[k] = v
+		}
 	}
 
-	for _, sub := range subs {
-		if err := sub.handler(ctx, p); err != nil {
-			p.err = err
-			if eh := m.opts.ErrorHandler; eh != nil {
-				err = eh(ctx, p)
-				if err != nil {
-					logger.Errorf("[memory]: error publishing: %v", err)
-				}
+	// 按 Queue 分组：同组只投递一个
+	delivered := make(map[string]bool)
+	for _, s := range subs {
+		key := s.options.Queue
+		if key != "" {
+			if delivered[key] {
 				continue
 			}
-			return err
+			delivered[key] = true
+		}
+		evt := &memoryEvent{topic: topic, msg: msg}
+		if err := s.handler(ctx, evt); err != nil {
+			if !s.options.AutoAck {
+				// Handler 已自行决定 Ack/Nack
+				continue
+			}
+			// AutoAck 模式下错误意味着失败：调用 Nack
+			_ = evt.Nack(err)
+			continue
+		}
+		if s.options.AutoAck {
+			_ = evt.Ack()
 		}
 	}
-
 	return nil
 }
 
-func (m *memoryBroker) Subscribe(topic string, handler Handler, opts ...SubscribeOption) (Subscriber, error) {
-	m.RLock()
+// Subscribe 注册一个订阅。返回的 Subscription 可用于取消。
+func (m *MemoryBroker) Subscribe(_ context.Context, topic string, handler Handler, opts ...SubscribeOption) (Subscription, error) {
+	o := NewSubscribeOptions(opts...)
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if !m.connected {
-		m.RUnlock()
-		return nil, errors.New("not connected")
+		return nil, ErrNotConnected
 	}
-	m.RUnlock()
-
-	var options SubscribeOptions
-	for _, o := range opts {
-		o(&options)
+	bucket, ok := m.subscribers[topic]
+	if !ok {
+		bucket = make(map[string]*memorySubscription)
+		m.subscribers[topic] = bucket
 	}
 
-	sub := &memorySubscriber{
-		exit:    make(chan bool, 1),
+	sub := &memorySubscription{
 		id:      uuid.New().String(),
 		topic:   topic,
 		handler: handler,
-		opts:    options,
+		options: o,
+		broker:  m,
 	}
-
-	m.Lock()
-	m.Subscribers[topic] = append(m.Subscribers[topic], sub)
-	m.Unlock()
-
-	go func() {
-		<-sub.exit
-		m.Lock()
-		var newSubscribers []*memorySubscriber
-		for _, sb := range m.Subscribers[topic] {
-			if sb.id == sub.id {
-				continue
-			}
-			newSubscribers = append(newSubscribers, sb)
-		}
-		m.Subscribers[topic] = newSubscribers
-		m.Unlock()
-	}()
-
+	bucket[sub.id] = sub
 	return sub, nil
 }
 
-func (m *memoryBroker) String() string {
-	return "memory"
+// ErrNotConnected 在尚未 Connect 时操作 broker 返回。
+var ErrNotConnected = errors.New("broker: not connected")
+
+// ============================================================
+// 内部类型
+// ============================================================
+
+type memorySubscription struct {
+	id      string
+	topic   string
+	handler Handler
+	options SubscribeOptions
+	broker  *MemoryBroker
+
+	mu     sync.Mutex
+	closed bool
 }
 
-func (m *memoryEvent) Topic() string {
-	return m.topic
-}
+func (s *memorySubscription) Topic() string { return s.topic }
 
-func (m *memoryEvent) Message() *Message {
-	switch v := m.message.(type) {
-	case *Message:
-		return v
-	case []byte:
-		msg := &Message{}
-		if err := m.opts.Codec.Unmarshal(v, msg); err != nil {
-			m.opts.Logger.Errorf("[memory]: failed to unmarshal: %v", err)
-			return nil
-		}
-		return msg
+func (s *memorySubscription) Close() error {
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
 	}
+	s.closed = true
+	s.mu.Unlock()
 
+	s.broker.mu.Lock()
+	defer s.broker.mu.Unlock()
+	if bucket, ok := s.broker.subscribers[s.topic]; ok {
+		delete(bucket, s.id)
+		if len(bucket) == 0 {
+			delete(s.broker.subscribers, s.topic)
+		}
+	}
 	return nil
 }
 
-func (m *memoryEvent) Ack() error {
+func (s *memorySubscription) markClosed() {
+	s.mu.Lock()
+	s.closed = true
+	s.mu.Unlock()
+}
+
+type memoryEvent struct {
+	topic string
+	msg   *Message
+
+	mu      sync.Mutex
+	acked   bool
+	nackErr error
+}
+
+func (e *memoryEvent) Topic() string    { return e.topic }
+func (e *memoryEvent) Message() *Message { return e.msg }
+
+func (e *memoryEvent) Ack() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.acked {
+		return nil
+	}
+	e.acked = true
 	return nil
 }
 
-func (m *memoryEvent) Error() error {
-	return m.err
-}
-
-func (m *memorySubscriber) Options() SubscribeOptions {
-	return m.opts
-}
-
-func (m *memorySubscriber) Topic() string {
-	return m.topic
-}
-
-func (m *memorySubscriber) Unsubscribe() error {
-	m.exit <- true
+func (e *memoryEvent) Nack(err error) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.nackErr = err
 	return nil
 }
+
+// ensure interfaces
+var (
+	_ Broker       = (*MemoryBroker)(nil)
+	_ Subscription = (*memorySubscription)(nil)
+	_ Event        = (*memoryEvent)(nil)
+)
