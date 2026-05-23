@@ -33,7 +33,7 @@ type Metadata struct {
 	Rename string // rename
 }
 
-// WithDisabled set disabled metrics.
+// WithDisabled disables access logging.
 func WithDisabled(disabled bool) Option {
 	return func(o *Options) {
 		o.disabled = disabled

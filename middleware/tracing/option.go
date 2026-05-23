@@ -1,6 +1,9 @@
 package tracing
 
 import (
+	"go.opentelemetry.io/contrib/propagators/b3"
+	ktracing "github.com/go-kratos/kratos/v2/middleware/tracing"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
@@ -12,9 +15,7 @@ type Option interface {
 
 type optionFunc func(*options)
 
-func (o optionFunc) apply(c *options) {
-	o(c)
-}
+func (o optionFunc) apply(c *options) { o(c) }
 
 type options struct {
 	disabled       bool
@@ -22,15 +23,31 @@ type options struct {
 	propagators    propagation.TextMapPropagator
 }
 
-// WithDisabled set disabled trace.
+func defaultOptions() options {
+	return options{
+		tracerProvider: otel.GetTracerProvider(),
+		propagators:    DefaultPropagator(),
+	}
+}
+
+// DefaultPropagator returns the next default composite propagator (b3 + metadata + w3c).
+func DefaultPropagator() propagation.TextMapPropagator {
+	return propagation.NewCompositeTextMapPropagator(
+		ktracing.Metadata{},
+		propagation.Baggage{},
+		propagation.TraceContext{},
+		b3.New(),
+	)
+}
+
+// WithDisabled disables tracing middleware.
 func WithDisabled(disabled bool) Option {
 	return optionFunc(func(o *options) {
 		o.disabled = disabled
 	})
 }
 
-// WithTracerProvider specifies a tracer provider to use for creating a tracer.
-// If none is specified, the global provider is used.
+// WithTracerProvider specifies a tracer provider.
 func WithTracerProvider(provider oteltrace.TracerProvider) Option {
 	return optionFunc(func(o *options) {
 		if provider != nil {
@@ -39,13 +56,18 @@ func WithTracerProvider(provider oteltrace.TracerProvider) Option {
 	})
 }
 
-// WithPropagators specifies propagators to use for extracting
-// information from the HTTP requests. If none are specified, global
-// ones will be used.
+// WithPropagators specifies propagators for extract/inject.
 func WithPropagators(propagators propagation.TextMapPropagator) Option {
 	return optionFunc(func(o *options) {
 		if propagators != nil {
 			o.propagators = propagators
 		}
+	})
+}
+
+// WithB3Propagator ensures b3 is included in the default composite propagator.
+func WithB3Propagator() Option {
+	return optionFunc(func(o *options) {
+		o.propagators = DefaultPropagator()
 	})
 }
