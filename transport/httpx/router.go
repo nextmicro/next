@@ -11,7 +11,7 @@ type router struct {
 	srv           *khttp.Server
 	krouter       *khttp.Router
 	preMiddleware []MiddlewareFunc
-	pool          sync.Pool
+	pool          *sync.Pool
 	opts          RouterOptions
 }
 
@@ -27,6 +27,7 @@ func newRouter(srv *khttp.Server, prefix string, opts RouterOptions, m ...Middle
 		preMiddleware: append([]MiddlewareFunc(nil), m...),
 		opts:          opts,
 	}
+	r.pool = &sync.Pool{}
 	r.pool.New = func() any { return newContext(r) }
 	return r
 }
