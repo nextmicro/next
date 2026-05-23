@@ -12,8 +12,8 @@ next 必须直接使用 `kratos/transport/http.Server`、`kratos/transport/grpc.
 #### 场景:不存在 next/transport/http.Server 类型
 
 - **当** 在 next 包结构中查找 transport.Server 自定义类型
-- **那么** `next/transport/http` 与 `next/transport/grpc` 包**必须不导出**独立 `Server` 结构体实现（拷贝 kratos 源码）；仅允许 `deprecated.go` 中的薄包装（嵌入 `*khttp.Server` 以保留 `Route()` 过渡 API）
-- **过渡条款**：`transport/http/deprecated.go` 必须在 `v3.0.0` 之前删除
+- **那么** **必须不存在** `next/transport/http` 包；HTTP server 仅通过 `transport.NewHTTPServer` 返回 `*kratos/transport/http.Server`
+- **那么** **必须不存在** `next/transport/grpc` 顶层包（`NewServer` / `Dial` 等 re-export）；gRPC server 仅通过 `transport.NewGRPCServer` 返回 `*kratos/transport/grpc.Server`；`transport/grpc/resolver/` 子包保留
 
 ### 需求:配置驱动的 ServerBuilder
 
@@ -54,13 +54,13 @@ next 仓库**必须**不再保留与 kratos 上游高度相似的拷贝代码，
 
 #### 场景:transport/http 拷贝代码清零
 
-- **当** 检查 `next/transport/http/` 目录
-- **那么** 必须不存在 `server.go`、`client.go`、`codec.go`、`context.go`、`binding/`、`status/` 等从 kratos 拷贝的文件或子包；仅允许保留 `transport/http/deprecated.go`
+- **当** 检查 `next/transport/` 目录
+- **那么** **必须不存在** `transport/http/` 目录或包
 
 #### 场景:transport/grpc 拷贝代码清零
 
 - **当** 检查 `next/transport/grpc/` 目录
-- **那么** 必须不存在 `server.go`、`client.go`、`codec.go`、`balancer.go`、`interceptor.go`、`transport.go` 等从 kratos 拷贝的文件；`resolver/` 子包保留待独立评估
+- **那么** 必须不存在 `server.go`、`client.go`、`codec.go`、`balancer.go`、`interceptor.go`、`transport.go`、`deprecated.go` 等顶层文件；`resolver/` 子包保留待独立评估
 
 #### 场景:internal 包必须保留
 

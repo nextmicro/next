@@ -156,18 +156,7 @@ import _ "github.com/nextmicro/next/middleware/recovery"
 
 ## 7. Transport Server 与 Router DSL
 
-### v1（deprecated 兼容层，v3.0.0 删除）
-```go
-import nexthttp "github.com/nextmicro/next/transport/http"
-
-srv := nexthttp.NewServer(nexthttp.Address(":8080"))
-route := srv.Route("/api", authMiddleware)
-route.GET("/users/{id}", func(c nexthttp.Context) error {
-    return c.JSON(200, map[string]string{"id": c.Vars().Get("id")})
-})
-```
-
-### v2（推荐）
+### v2 / v3（推荐，v3.0.0 起唯一方式）
 ```go
 import (
     khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -187,7 +176,31 @@ route.GET("/users/{id}", func(c httpx.Context) error {
 })
 ```
 
-返回 `*khttp.Server`（kratos 原版）。Router DSL 迁移至 `transport/httpx`，保留 `Context` / `MiddlewareFunc` 签名。
+gRPC server：
+
+```go
+import (
+    "github.com/nextmicro/next/transport"
+)
+
+srv, err := transport.NewGRPCServer(transport.GRPCServerConfig{
+    ServerOptions: []kgrpc.ServerOption{kgrpc.Address(":9000")},
+})
+```
+
+返回 `*khttp.Server` / `*kgrpc.Server`（kratos 原版）。Router DSL 在 `transport/httpx`，保留 `Context` / `MiddlewareFunc` 签名。
+
+### v1 兼容层（v2.x 已移除，v3.0.0）
+
+以下 API **不再存在**，升级时必须改写：
+
+| 已删除 | 替代 |
+|--------|------|
+| `import nexthttp "github.com/nextmicro/next/transport/http"` | `transport.NewHTTPServer` + `transport/httpx` |
+| `nexthttp.NewServer(...)` | `transport.NewHTTPServer(...)` |
+| `srv.Route(prefix, m...)` | `httpx.NewRouter(srv, prefix, m...)` |
+| `import nextgrpc "github.com/nextmicro/next/transport/grpc"` | `transport.NewGRPCServer` 或 `kgrpc.NewServer` |
+| `nextgrpc.NewServer` / `nextgrpc.Dial` | `transport.NewGRPCServer` / `kgrpc.Dial` |
 
 ### 批量替换 import 路径
 
@@ -328,6 +341,8 @@ func (*CacheComponent) Deps() []reflect.Type {
 | `broker.Broker.Address()` | 方法移除 | 业务方应在创建时记录 addr |
 | `adapter/broker/kafka` | 包路径变更 | 改为 `broker/kafka` |
 | `adapter/broker/wrapper/{logging,metrics}` | 包路径变更 | 改为 `broker/wrappers/{logging,metrics}` |
+| `transport/http` 包（v3.0.0） | 包已删除 | `transport.NewHTTPServer` + `transport/httpx` |
+| `transport/grpc` 顶层包（v3.0.0） | `NewServer`/`Dial` re-export 已删除 | `transport.NewGRPCServer` 或 `kgrpc.*` |
 
 ---
 

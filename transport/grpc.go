@@ -6,6 +6,9 @@ import (
 	kgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	configv1 "github.com/nextmicro/next/api/config/v1"
 	"github.com/nextmicro/next/middleware"
+
+	// 注册 next 自定义 direct:// gRPC resolver scheme。
+	_ "github.com/nextmicro/next/transport/grpc/resolver/direct"
 )
 
 // GRPCServerConfig 是 transport.NewGRPCServer 的可选行为开关。

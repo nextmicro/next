@@ -1,6 +1,6 @@
 // Package transport 提供基于 kratos 原版 transport 的薄装饰工厂。
 //
-// HTTP 路由 DSL 见 transport/httpx；v1 兼容层见 transport/http/deprecated.go（v3.0.0 删除）。
+// HTTP 路由 DSL 见 transport/httpx。
 package transport
 
 import (
@@ -34,8 +34,7 @@ type HTTPServerConfig struct {
 // 返回的 *khttp.Server 可直接 RegisterService / HandleFunc，
 // 然后通过 next.Server(srv) Option 挂载到 next.App。
 //
-// 注意：本工厂仅依赖 kratos 公开 API + next middleware.Registry，不依赖
-// next 自维护的 transport/http 子包。
+// 注意：本工厂仅依赖 kratos 公开 API + next middleware.Registry。
 func NewHTTPServer(cfg HTTPServerConfig) (*khttp.Server, error) {
 	reg := cfg.Registry
 	if reg == nil {
